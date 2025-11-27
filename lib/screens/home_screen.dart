@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'chat_screen.dart';
+import 'api_test_screen.dart'; // 추가
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -96,6 +97,32 @@ class HomeScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(28),
                           ),
                           elevation: 8,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    // API 테스트 버튼 추가
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ApiTestScreen()),
+                          );
+                        },
+                        icon: Icon(Icons.bug_report),
+                        label: Text(
+                          'API 키 테스트 (개발용)',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
                         ),
                       ),
                     ),

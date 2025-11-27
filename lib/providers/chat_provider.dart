@@ -56,26 +56,44 @@ class ChatProvider extends ChangeNotifier {
         // 수집된 답변들을 하나의 문자열로 합쳐서 AI에게 전달
         final fullContext = _answers.map((qa) => "${qa['question']}\n답변: ${qa['answer']}").join('\n\n');
         
+        print('=== 전체 컨텍스트 ===');
+        print(fullContext);
+        
         final response = await _aiService.getRecommendation(
           userInput: fullContext,
-          conversationHistory: [], // 단계별 질문에서는 이전 히스토리가 필요 없음
+          conversationHistory: [],
         );
+
+        print('=== AI 분석 결과 ===');
+        print('분석: ${response.analysis}');
+        print('검색어: ${response.searchQuery}');
 
         // 2. AI가 만든 검색어로 네이버 쇼핑 API 검색
         _recommendations = await _naverService.search(response.searchQuery);
         
-        _currentQuestion = response.analysis;
-        _state = ChatState.finished;
+        if (_recommendations.isEmpty) {
+          // 검색 결과가 없을 때
+          _currentQuestion = '${response.analysis}\n\n'
+              '😅 죄송해요, "${response.searchQuery}" 검색 결과가 없네요.\n\n'
+              '다른 키워드로 다시 검색해볼까요? 아래 버튼으로 처음부터 다시 시작하실 수 있어요.';
+          _state = ChatState.finished;
+        } else {
+          _currentQuestion = response.analysis;
+          _state = ChatState.finished;
+        }
       } catch (e) {
-        _currentQuestion = '죄송합니다. 추천 과정에서 오류가 발생했어요.\n\n$e';
-        _state = ChatState.asking; // 오류 후 다시 시작할 수 있도록 _startConversation() 호출도 가능
+        print('❌ 오류 발생: $e');
+        _currentQuestion = '😢 죄송합니다. 추천 과정에서 오류가 발생했어요.\n\n'
+            '오류 내용: ${e.toString()}\n\n'
+            '다시 시도해주시거나, 질문을 조금 다르게 해주시면 도움이 될 것 같아요.';
+        _state = ChatState.asking;
       } finally {
         notifyListeners();
       }
     } else {
       // 다음 질문으로 이동
       _currentQuestion = _questions[_currentStep];
-      _state = ChatState.asking; // 오류 후 다시 질문할 수 있도록
+      _state = ChatState.asking;
       notifyListeners();
     }
   }
