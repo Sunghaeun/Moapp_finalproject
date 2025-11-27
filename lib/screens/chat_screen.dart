@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
 import '../providers/chat_provider.dart';
-import '../widgets/chat_bubble.dart';
-import '../widgets/typing_indicator.dart';
-import '../models/chat_message.dart';
+import '../widgets/gift_card.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -13,153 +12,149 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    // 화면이 빌드된 후 스크롤을 맨 아래로 이동합니다.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-  }
 
   @override
   Widget build(BuildContext context) {
-    // ChatProvider를 사용하여 상태를 감시합니다.
     final chatProvider = context.watch<ChatProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('선물 추천 AI'),
         backgroundColor: Colors.red[700],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: chatProvider.messages.length,
-              itemBuilder: (context, index) {
-                return ChatBubble(message: chatProvider.messages[index]);
-              },
-            ),
+        title: const Text('선물 추천 AI'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              context.read<ChatProvider>().restartConversation();
+            },
           ),
-          if (chatProvider.isLoading)
-            const Padding( // This was the error, but since TypingIndicator is not const, we remove it.
-              padding: EdgeInsets.all(8),
-              child: TypingIndicator(),
-            ),
-          _buildFollowupQuestions(chatProvider),
-          _buildInputArea(),
         ],
       ),
-    );
-  }
-
-  Widget _buildFollowupQuestions(ChatProvider chatProvider) {
-    // 로딩 중이 아니거나 후속 질문이 있을 때만 버튼들을 보여줍니다.
-    if (chatProvider.isLoading || chatProvider.followupQuestions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8.0,
-        runSpacing: 8.0,
-        children: chatProvider.followupQuestions.map((question) {
-          return ActionChip(
-            label: Text(question),
-            onPressed: () {
-              _sendFollowupQuestion(question);
-            },
-            backgroundColor: Colors.red[50],
-            labelStyle: TextStyle(color: Colors.red[800]),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.0),
-              side: BorderSide(color: Colors.red[100]!),
-            ),
-          );
-        }).toList(),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: _buildBody(chatProvider),
+              ),
+              if (chatProvider.state == ChatState.asking) _buildInputArea(),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  void _sendFollowupQuestion(String question) {
-    // 텍스트 필드에 질문을 채우고 바로 전송합니다.
-    _controller.text = question;
-    _sendMessage();
+  Widget _buildBody(ChatProvider provider) {
+    switch (provider.state) {
+      case ChatState.loading:
+        return _buildCharacterView('생각 중...', isLoading: true);
+      case ChatState.finished:
+        return _buildFinishedView(provider);
+      case ChatState.asking:
+      default:
+        return _buildCharacterView(provider.currentQuestion);
+    }
+  }
+
+  Widget _buildCharacterView(String message, {bool isLoading = false}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Lottie 애니메이션을 사용합니다. assets/snowman.json 파일이 필요합니다.
+        // 파일이 없다면 Image.asset 등으로 대체할 수 있습니다.
+        SizedBox(
+          height: 200,
+          child: isLoading
+              ? Lottie.asset('assets/animations/snowman_thinking.json')
+              : Lottie.asset('assets/animations/snowman_talking.json'),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, height: 1.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFinishedView(ChatProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          provider.currentQuestion, // 최종 분석 내용
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '이런 선물들은 어떠세요? 🎁',
+          style: TextStyle(fontSize: 16, color: Colors.black54),
+        ),
+        const Divider(height: 24),
+        Expanded(
+          child: ListView.builder(
+            itemCount: provider.recommendations.length,
+            itemBuilder: (context, index) {
+              return GiftCard(gift: provider.recommendations[index]);
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, -2),
-            blurRadius: 4,
-            color: Colors.black12,
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: '20대 여자친구에게 줄 3만원대 크리스마스 선물 추천해줘',
+                hintText: '답변을 입력하세요...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey[400]!),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.red[700]!, width: 2),
                 ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
+              onSubmitted: (_) => _sendAnswer(),
             ),
           ),
           const SizedBox(width: 8),
           CircleAvatar(
+            radius: 24,
             backgroundColor: Colors.red[700],
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: context.watch<ChatProvider>().isLoading ? null : _sendMessage,
+              onPressed: _sendAnswer,
             ),
           ),
         ],
       ),
     );
   }
-  
-  Future<void> _sendMessage() async {
+
+  void _sendAnswer() {
     if (_controller.text.trim().isEmpty) return;
-    
     final content = _controller.text;
     _controller.clear();
-    
-    // Provider를 통해 메시지 전송
-    // UI 업데이트는 Provider가 알아서 처리합니다.
-    await context.read<ChatProvider>().sendMessage(content);
-    
-    _scrollToBottom(); // 메시지 전송 후 스크롤
-  }
-
-  void _scrollToBottom() {
-    // Provider가 상태를 업데이트하고 위젯이 리빌드된 후에 스크롤합니다.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    context.read<ChatProvider>().sendAnswer(content);
   }
 }
