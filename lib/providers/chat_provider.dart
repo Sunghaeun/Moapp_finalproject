@@ -1,146 +1,87 @@
 // providers/chat_provider.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import '../models/gift_model.dart';
-import '../services/openai_service.dart'; // 변경!
-import '../services/storage_service.dart';
+import '../services/openai_service.dart';
+import '../services/naver_shopping_service.dart';
+
+enum ChatState { asking, loading, finished }
 
 class ChatProvider extends ChangeNotifier {
-  final OpenAIService _aiService = OpenAIService(); // 변경!
-  final StorageService _storageService = StorageService();
-  
-  List<ChatMessage> _messages = [];
-  bool _isLoading = false;
-  List<String> _followupQuestions = [];
+  final OpenAIService _aiService = OpenAIService();
+  final NaverShoppingService _naverService = NaverShoppingService();
 
-  List<ChatMessage> get messages => _messages;
-  bool get isLoading => _isLoading;
-  List<String> get followupQuestions => _followupQuestions;
+  ChatState _state = ChatState.asking;
+  String _currentQuestion = '안녕하세요! 특별한 선물을 찾고 계신가요?\n\n누구에게 선물하실 건지 알려주세요.';
+  final List<Map<String, String>> _answers = [];
+  List<Gift> _recommendations = [];
+  int _currentStep = 0;
+
+  final List<String> _questions = [
+    '누구에게 선물하실 건지 알려주세요. (예: 20대 여자친구)',
+    '선물 가격대는 어느 정도로 생각하세요? (예: 5만원 이하)',
+    '어떤 특별한 날을 위한 선물인가요? (예: 생일, 1주년, 크리스마스)',
+    '선물 받으실 분의 취미나 요즘 관심사는 무엇인가요? (예: 운동, 독서, 게임)',
+  ];
+
+  ChatState get state => _state;
+  String get currentQuestion => _currentQuestion;
+  List<Gift> get recommendations => _recommendations;
 
   ChatProvider() {
-    _loadConversation();
+    _startConversation();
   }
 
-  Future<void> _loadConversation() async {
-    try {
-      _messages = await _storageService.loadConversation();
-      notifyListeners();
-    } catch (e) {
-      print('대화 로드 실패: $e');
-    }
-  }
-
-  Future<void> sendMessage(String content) async {
-    final userMessage = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: content,
-      type: MessageType.user,
-      timestamp: DateTime.now(),
-    );
-
-    _messages.add(userMessage);
-    _isLoading = true;
-    _followupQuestions.clear();
+  void _startConversation() {
+    _state = ChatState.asking;
+    _currentStep = 0;
+    _currentQuestion = _questions[_currentStep];
+    _answers.clear();
+    _recommendations.clear();
     notifyListeners();
+  }
 
-    try {
-      print('=== 메시지 전송: $content ===');
-      
-      final response = await _aiService.getRecommendation(
-        userInput: content,
-        conversationHistory: _messages,
-      );
+  Future<void> sendAnswer(String answer) async {
+    // 현재 단계의 질문과 답변을 저장
+    _answers.add({'question': _questions[_currentStep], 'answer': answer});
+    _currentStep++;
 
-      print('✅ 추천 받음: ${response.recommendations.length}개');
+    // 모든 질문이 끝났는지 확인
+    if (_currentStep >= _questions.length) {
+      // 모든 정보가 모였으므로 AI에게 추천 요청
+      _state = ChatState.loading;
+      notifyListeners();
 
-      final List<Gift> recommendedGifts = response.recommendations.map((rec) {
-        return Gift(
-          id: DateTime.now().millisecondsSinceEpoch.toString() + rec.name.hashCode.toString(),
-          name: rec.name,
-          description: rec.reason,
-          price: rec.price,
-          imageUrl: 'https://via.placeholder.com/150?text=${Uri.encodeComponent(rec.name)}',
-          category: '추천',
-          tags: rec.alternatives.isEmpty ? ['추천'] : rec.alternatives.take(3).toList(),
-          purchaseLink: rec.link ?? 'https://www.google.com/search?q=${Uri.encodeComponent(rec.name + " 구매")}',
+      try {
+        // 수집된 답변들을 하나의 문자열로 합쳐서 AI에게 전달
+        final fullContext = _answers.map((qa) => "${qa['question']}\n답변: ${qa['answer']}").join('\n\n');
+        
+        final response = await _aiService.getRecommendation(
+          userInput: fullContext,
+          conversationHistory: [], // 단계별 질문에서는 이전 히스토리가 필요 없음
         );
-      }).toList();
 
-      final assistantMessage = ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: response.analysis,
-        type: MessageType.assistant,
-        timestamp: DateTime.now(),
-        recommendedGifts: recommendedGifts.isEmpty ? null : recommendedGifts,
-      );
-
-      _messages.add(assistantMessage);
-      _followupQuestions = response.followupQuestions;
-
-      await _storageService.saveConversation(_messages);
-      print('✅ 완료!');
-
-    } catch (e, stackTrace) {
-      print('❌ 오류: $e');
-      print('스택: $stackTrace');
-      
-      // 에러 유형별 친절한 메시지
-      String errorMessage;
-      
-      if (e.toString().contains('API 키')) {
-        errorMessage = '''
-⚠️ **API 키 오류**
-
-OpenAI API 키가 올바르게 설정되지 않았습니다.
-
-**해결 방법:**
-1. .env 파일을 열어주세요
-2. OPENAI_API_KEY=sk-proj-... 형식으로 키를 입력하세요
-3. 앱을 재시작해주세요
-
-API 키는 https://platform.openai.com/api-keys 에서 발급받을 수 있습니다.
-''';
-      } else if (e.toString().contains('크레딧')) {
-        errorMessage = '''
-⚠️ **크레딧 부족**
-
-OpenAI 계정의 크레딧이 부족합니다.
-
-**해결 방법:**
-1. https://platform.openai.com/account/billing 접속
-2. 크레딧 충전 (부터 가능)
-
-💡 신규 가입 시  무료 크레딧이 제공됩니다!
-''';
-      } else if (e.toString().contains('429') || e.toString().contains('한도')) {
-        errorMessage = '''
-⚠️ **요청 한도 초과**
-
-잠시 너무 많은 요청을 보냈습니다.
-
-1분 후에 다시 시도해주세요! ☕
-''';
-      } else {
-        errorMessage = '죄송합니다. 오류가 발생했습니다.\n\n${e.toString()}\n\n다시 시도해주세요.';
+        // 2. AI가 만든 검색어로 네이버 쇼핑 API 검색
+        _recommendations = await _naverService.search(response.searchQuery);
+        
+        _currentQuestion = response.analysis;
+        _state = ChatState.finished;
+      } catch (e) {
+        _currentQuestion = '죄송합니다. 추천 과정에서 오류가 발생했어요.\n\n$e';
+        _state = ChatState.asking; // 오류 후 다시 시작할 수 있도록 _startConversation() 호출도 가능
+      } finally {
+        notifyListeners();
       }
-      
-      _messages.add(ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: errorMessage,
-        type: MessageType.assistant,
-        timestamp: DateTime.now(),
-      ));
-    } finally {
-      _isLoading = false;
+    } else {
+      // 다음 질문으로 이동
+      _currentQuestion = _questions[_currentStep];
+      _state = ChatState.asking; // 오류 후 다시 질문할 수 있도록
       notifyListeners();
     }
   }
 
-  Future<void> clearChat() async {
-    _messages.clear();
-    _followupQuestions.clear();
-    await _storageService.clearConversation();
-    notifyListeners();
+  // 대화 다시 시작
+  void restartConversation() {
+    _startConversation();
   }
 }
