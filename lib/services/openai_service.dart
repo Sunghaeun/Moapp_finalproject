@@ -31,8 +31,8 @@ class OpenAIService {
           'model': 'gpt-4o-mini',
           'messages': messages,
           'response_format': {'type': 'json_object'},
-          'temperature': 0.8,
-          'max_tokens': 2000,
+          'temperature': 0.7,
+          'max_tokens': 1000,
         }),
       );
 
@@ -60,13 +60,13 @@ class OpenAIService {
       
       final content = data['choices'][0]['message']['content'] as String;
       
-      print('✅ 응답 받음 (${content.length}자)');
-      print('응답 내용: ${content.substring(0, content.length > 200 ? 200 : content.length)}...');
+      print('✅ 응답 받음');
+      print('응답 내용: $content');
       
       final jsonData = jsonDecode(content);
       
       print('✅ JSON 파싱 성공!');
-      print('추천 수: ${jsonData['recommendations']?.length ?? 0}');
+      print('생성된 검색어: ${jsonData['searchQuery']}');
       
       return RecommendationResponse.fromJson(jsonData);
       
@@ -74,7 +74,6 @@ class OpenAIService {
       print('❌ OpenAI API 오류: $e');
       print('스택 트레이스: $stackTrace');
       
-      // 사용자 친화적 에러 메시지
       if (e.toString().contains('401') || e.toString().contains('API 키')) {
         throw Exception('API 키 오류\n\n.env 파일에 OPENAI_API_KEY가 올바르게 설정되어 있는지 확인해주세요.');
       } else if (e.toString().contains('429')) {
@@ -93,42 +92,80 @@ class OpenAIService {
   ) {
     final messages = <Map<String, String>>[];
     
-    // 시스템 프롬프트
+    // 개선된 시스템 프롬프트
     messages.add({
       'role': 'system',
       'content': '''
-# 페르소나 및 가이드라인
-당신은 20년 경력의 선물 큐레이션 전문가이자 트렌드 애널리스트입니다.
-진정성, 실용성, 특별함을 모두 고려하여 따뜻하지만 객관적인 조언을 제공합니다.
+당신은 한국 온라인 쇼핑몰 전문 검색어 생성 AI입니다.
+사용자의 선물 요구사항을 분석하여 **네이버 쇼핑에서 실제로 검색 가능한** 키워드를 생성합니다.
 
-## 추천 프로세스
-1. **프로파일링**: 받는 사람의 나이, 성별, 관계, 취향을 파악합니다.
-2. **상황 분석**: 선물의 의미, 예산, 긴급도를 고려합니다.
-3. **카테고리 선정**: 실용, 감성, 경험, 트렌드 중 최적의 카테고리를 정합니다.
-4. **큐레이션**: 3-5개의 다양한 선물을 추천합니다.
-5. **스토리텔링**: 각 선물이 "왜 이 사람에게 특별한지"에 대한 이야기를 전달합니다.
+# 검색어 생성 규칙 (매우 중요!)
 
-## 답변 스타일
-- **공감**: 1-2 문장으로 사용자의 상황에 공감하며 시작합니다.
-- **구체적 추천**: 각 선물마다 "왜 이 사람에게 이 선물인가"를 명확히 설명합니다. (예: "20대 여자친구라면 자기관리와 일상의 소소한 행복을 중요하게 여기는 시기죠. 디올 립스틱은 매일 아침 메이크업하며 당신을 떠올릴 수 있는 선물이에요...")
-- **팁 제공**: 포장, 메시지 카드, 전달 타이밍 등 추가 팁을 제공합니다.
+1. **구체적인 제품명 사용**
+   - ❌ "20대 여자친구 생일선물 5만원대" (너무 포괄적)
+   - ✅ "향수", "립스틱", "텀블러", "에어팟", "손목시계"
+
+2. **브랜드명 활용**
+   - ✅ "디올 립스틱", "조말론 향수", "스타벅스 텀블러"
+
+3. **가격대는 검색어에 포함하지 않음**
+   - ❌ "5만원대 향수"
+   - ✅ "향수" (가격은 결과에서 필터링)
+
+4. **단순하고 명확한 키워드**
+   - 2-4단어 이내
+   - 한국어로만 작성
+   - 쇼핑몰에서 실제로 팔리는 제품명
+
+# 추천 카테고리별 검색어 예시
+
+**뷰티/화장품**: 향수, 립스틱, 스킨케어세트, 네일케어
+**패션/잡화**: 지갑, 시계, 가방, 목도리, 장갑
+**전자기기**: 무선이어폰, 블루투스스피커, 보조배터리, 스마트워치
+**생활용품**: 텀블러, 머그컵, 캔들, 디퓨저, 쿠션
+**취미/레저**: 보드게임, 퍼즐, 독서등, 운동용품
+**식품**: 초콜릿세트, 와인, 커피세트, 견과류세트
 
 # 출력 형식
-**반드시 다음 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.**
+
+**반드시 다음 JSON 형식으로만 응답하세요:**
+
 {
-  "analysis": "사용자의 답변을 종합하여 선물 추천 방향을 요약하고 공감하는 내용 (2-3문장, 한글)",
-  "searchQuery": "네이버 쇼핑 검색에 사용할 가장 효과적인 검색어 (예: 20대 여자친구 생일선물 5만원대)"
+  "analysis": "사용자가 찾는 선물에 대한 친절한 분석 (2-3문장, 한글)",
+  "searchQuery": "네이버 쇼핑에서 검색할 구체적인 제품명 (2-4단어, 한글)"
 }
 
-## 출력 규칙
-1. `analysis`는 사용자의 답변을 기반으로 친절하게 작성하세요.
-2. `searchQuery`는 네이버 쇼핑에서 최적의 결과를 얻을 수 있도록 핵심 키워드를 조합하여 만드세요.
-3. 모든 텍스트는 한글로 작성하세요.
-4. **JSON 형식과 규칙을 반드시 준수하세요.**
+# 예시
+
+입력: "20대 여자친구에게 줄 생일선물, 5만원 정도"
+출력:
+{
+  "analysis": "20대 여성분들께 인기 있는 뷰티 아이템이나 패션 소품이 좋을 것 같아요. 일상에서 자주 사용할 수 있는 실용적인 선물을 추천드릴게요.",
+  "searchQuery": "디올 립스틱"
+}
+
+입력: "30대 남자 직장 동료, 10만원 이하, 취미는 커피"
+출력:
+{
+  "analysis": "커피를 좋아하시는 분이라면 홈카페 용품이나 고급 원두 세트가 좋겠네요. 직장 동료 선물로 적절한 실용적인 아이템을 찾아드릴게요.",
+  "searchQuery": "커피 드리퍼 세트"
+}
+
+입력: "엄마 생신, 70대, 건강 관심, 20만원"
+출력:
+{
+  "analysis": "건강에 관심이 많으신 어머니시라면 건강기능식품이나 건강관리 용품이 좋을 것 같아요. 정성이 담긴 건강 선물을 추천드릴게요.",
+  "searchQuery": "홍삼세트"
+}
+
+# 중요 사항
+- searchQuery는 반드시 **네이버 쇼핑에 존재하는 실제 제품명**이어야 합니다
+- 너무 포괄적이거나 추상적인 검색어는 피하세요
+- 가격대, 나이, 관계 등은 analysis에만 포함하고 searchQuery에는 넣지 마세요
 '''
     });
     
-    // 대화 히스토리 (최근 8개, 에러 메시지 제외)
+    // 대화 히스토리 (최근 4개만)
     final recentHistory = history
         .where((msg) => 
             !msg.content.contains('오류') && 
@@ -136,7 +173,7 @@ class OpenAIService {
             !msg.content.contains('API'))
         .toList()
         .reversed
-        .take(8)
+        .take(4)
         .toList()
         .reversed;
     
@@ -147,13 +184,11 @@ class OpenAIService {
           'content': msg.content,
         });
       } else {
-        // AI 응답은 간략하게 (토큰 절약)
-        final content = msg.content.length > 500 
-            ? msg.content.substring(0, 500) + '...'
-            : msg.content;
         messages.add({
           'role': 'assistant',
-          'content': content,
+          'content': msg.content.length > 300 
+              ? msg.content.substring(0, 300) + '...'
+              : msg.content,
         });
       }
     }
