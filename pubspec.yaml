@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  google_fonts: ^6.2.1
   
   # HTTP & API
   http: ^1.1.0
@@ -47,5 +48,5 @@ flutter:
   uses-material-design: true
   
   assets:
-    # - assets/animations/
     - .env
+    - assets/animations/

@@ -16,9 +16,6 @@ class OpenAIService {
     List<Gift>? relevantGifts,
   }) async {
     try {
-      print('=== OpenAI API 요청 시작 ===');
-      print('사용자 입력: $userInput');
-      
       final messages = _buildMessages(userInput, conversationHistory);
       
       final response = await http.post(
@@ -35,8 +32,6 @@ class OpenAIService {
           'max_tokens': 1000,
         }),
       );
-
-      print('📡 응답 코드: ${response.statusCode}');
 
       if (response.statusCode == 429) {
         throw Exception('API 요청 한도 초과. 잠시 후 다시 시도해주세요.');
@@ -59,14 +54,7 @@ class OpenAIService {
       }
       
       final content = data['choices'][0]['message']['content'] as String;
-      
-      print('✅ 응답 받음');
-      print('응답 내용: $content');
-      
       final jsonData = jsonDecode(content);
-      
-      print('✅ JSON 파싱 성공!');
-      print('생성된 검색어: ${jsonData['searchQuery']}');
       
       return RecommendationResponse.fromJson(jsonData);
       
