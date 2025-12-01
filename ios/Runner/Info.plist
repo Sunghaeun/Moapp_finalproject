@@ -45,5 +45,22 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.159024373084-9kaarbakji3hb2iva9cbnfvdgoqlegd5</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>GIDClientID</key>
+	<string>159024373084-9kaarbakji3hb2iva9cbnfvdgoqlegd5.apps.googleusercontent.com</string>
+
+	<key>GoogleMapsApiKey</key>
+	<string>AIzaSyAgFNs5kyK-3gG-pbGmtrm1mp2mkI_AwCQ</string>
 </dict>
 </plist>
