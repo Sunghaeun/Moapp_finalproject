@@ -10,22 +10,6 @@ class NaverShoppingService {
   final String baseUrl = 'https://openapi.naver.com/v1/search/shop.json';
 
   Future<List<Gift>> search(String query, {int retryCount = 0}) async {
-    // ========== 디버깅 출력 시작 ==========
-    print('\n========== 네이버 API 디버깅 정보 ==========');
-    print('📋 .env 파일에서 로드된 모든 키:');
-    print('   NAVER_CLIENT_ID: ${dotenv.env['NAVER_CLIENT_ID']}');
-    print('   NAVER_CLIENT_SECRET: ${dotenv.env['NAVER_CLIENT_SECRET']}');
-    print('   OPENAI_API_KEY: ${dotenv.env['OPENAI_API_KEY']}');
-    
-    print('\n🔑 실제 사용될 값:');
-    print('   clientId: $clientId');
-    print('   clientId 길이: ${clientId.length}');
-    print('   clientId가 비어있나?: ${clientId.isEmpty}');
-    print('   clientSecret 앞 8자: ${clientSecret.isNotEmpty ? clientSecret.substring(0, clientSecret.length > 8 ? 8 : clientSecret.length) : "비어있음"}...');
-    print('   clientSecret 길이: ${clientSecret.length}');
-    print('=========================================\n');
-    // ========== 디버깅 출력 끝 ==========
-
     // API 키 확인
     if (clientId.isEmpty || clientSecret.isEmpty) {
       throw Exception('❌ .env 파일 문제\n\n'
@@ -48,7 +32,6 @@ class NaverShoppingService {
     try {
       final url = '$baseUrl?query=${Uri.encodeComponent(query)}&display=10&sort=sim';
       print('요청 URL: $url');
-      print('헤더 Client ID: ${clientId.substring(0, clientId.length > 10 ? 10 : clientId.length)}...');
       
       final response = await http.get(
         Uri.parse(url),
@@ -59,7 +42,6 @@ class NaverShoppingService {
       );
 
       print('📡 응답 코드: ${response.statusCode}');
-      print('📦 응답 헤더: ${response.headers}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));

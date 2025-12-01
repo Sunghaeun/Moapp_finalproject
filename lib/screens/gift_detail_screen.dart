@@ -6,7 +6,7 @@ import '../models/gift_model.dart';
 class GiftDetailScreen extends StatelessWidget {
   final Gift gift;
 
-  const GiftDetailScreen({required this.gift});
+  const GiftDetailScreen({super.key, required this.gift});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class GiftDetailScreen extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey[300],
-                      child: Icon(Icons.card_giftcard, size: 100),
+                      child: const Icon(Icons.card_giftcard, size: 100),
                     );
                   },
                 ),
@@ -34,18 +34,18 @@ class GiftDetailScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     gift.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     '${_formatPrice(gift.price)}원',
                     style: TextStyle(
@@ -54,7 +54,7 @@ class GiftDetailScreen extends StatelessWidget {
                       color: Colors.red[700],
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -66,15 +66,15 @@ class GiftDetailScreen extends StatelessWidget {
                       );
                     }).toList(),
                   ),
-                  SizedBox(height: 24),
-                  Text(
+                  const SizedBox(height: 24),
+                  const Text(
                     '상품 설명',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     gift.description,
                     style: TextStyle(
@@ -83,22 +83,22 @@ class GiftDetailScreen extends StatelessWidget {
                       color: Colors.grey[800],
                     ),
                   ),
-                  SizedBox(height: 24),
-                  Divider(),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
                   _buildInfoRow(Icons.category, '카테고리', gift.category),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildInfoRow(Icons.shopping_bag, '구매처', '온라인'),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildInfoRow(Icons.local_shipping, '배송', '2-3일 소요'),
-                  SizedBox(height: 32),
+                  const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
                       onPressed: () => _launchURL(gift.purchaseLink),
-                      icon: Icon(Icons.shopping_cart),
-                      label: Text(
+                      icon: const Icon(Icons.shopping_cart),
+                      label: const Text(
                         '구매하러 가기',
                         style: TextStyle(fontSize: 18),
                       ),
@@ -111,14 +111,14 @@ class GiftDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: OutlinedButton.icon(
                       onPressed: () => _saveToWishlist(context),
-                      icon: Icon(Icons.favorite_border),
-                      label: Text(
+                      icon: const Icon(Icons.favorite_border),
+                      label: const Text(
                         '위시리스트에 추가',
                         style: TextStyle(fontSize: 18),
                       ),
@@ -131,7 +131,7 @@ class GiftDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(height: 32),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -145,10 +145,10 @@ class GiftDetailScreen extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, color: Colors.grey[600], size: 20),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
@@ -178,7 +178,7 @@ class GiftDetailScreen extends StatelessWidget {
   void _saveToWishlist(BuildContext context) {
     // TODO: Implement wishlist functionality
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+      const SnackBar(
         content: Text('위시리스트에 추가되었습니다!'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,

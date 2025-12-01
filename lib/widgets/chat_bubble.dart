@@ -28,6 +28,7 @@ class ChatBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 메시지 텍스트
             if (isUser)
               Text(
                 message.content,
@@ -40,6 +41,7 @@ class ChatBubble extends StatelessWidget {
                   p: const TextStyle(color: Colors.black87, fontSize: 16),
                 ),
               ),
+            // 선물 목록 (onFeedback 파라미터 제거)
             if (message.recommendedGifts != null && message.recommendedGifts!.isNotEmpty)
               ...message.recommendedGifts!.map((gift) => GiftCard(gift: gift)),
           ],
