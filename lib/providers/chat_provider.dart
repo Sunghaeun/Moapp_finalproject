@@ -83,16 +83,31 @@ class ChatProvider extends ChangeNotifier {
         SelectionChoice(label: '힐링/위로', value: '힐링', emoji: '🌿'),
       ],
     ),
-    QuestionData(
-      question: '선물 가격대는 어느 정도로 생각하세요?',
-      type: QuestionType.text,
-    ),
   ];
 
   ChatState get state => _state;
   String get currentQuestion => _currentQuestion;
   QuestionType get currentQuestionType => _currentQuestionType;
-  QuestionData get currentQuestionData => _questions[_currentStep];
+  QuestionData get currentQuestionData {
+    final originalQuestion = _questions[_currentStep];
+
+    // 첫 번째 질문에 대한 답변 확인
+    final targetAnswer = _answers.firstWhere(
+      (qa) => qa['question'] == _questions[0].question,
+      orElse: () => {'answer': ''},
+    )['answer'];
+    final isPet = targetAnswer == '강아지' || targetAnswer == '고양이';
+
+    // 반려동물을 선택했고, 현재 질문이 '선호도' 질문(2단계)인 경우
+    if (isPet && _currentStep == 2) {
+      final filteredChoices = originalQuestion.choices?.where((choice) {
+        return choice.value != '로맨틱한' && choice.value != '럭셔리한';
+      }).toList();
+
+      return QuestionData(question: originalQuestion.question, type: originalQuestion.type, choices: filteredChoices);
+    }
+    return originalQuestion;
+  }
   List<Gift> get recommendations => _recommendations;
   List<ChatMessage> get conversationHistory => _conversationHistory;
 
@@ -118,6 +133,8 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> sendAnswer(String answer) async {
+    final bool isPetSelection = _currentStep == 0 && (answer == '강아지' || answer == '고양이');
+
     _answers.add({'question': _questions[_currentStep].question, 'answer': answer});
     _conversationHistory.add(ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -127,6 +144,20 @@ class ChatProvider extends ChangeNotifier {
     ));
 
     _currentStep++;
+
+    // 반려동물을 선택한 경우, 연령대 질문을 건너뜁니다.
+    if (isPetSelection) {
+      final ageQuestion = _questions[_currentStep];
+      const autoAnswer = '상관없음'; // '아니요'에 해당하는 값
+      _answers.add({'question': ageQuestion.question, 'answer': autoAnswer});
+      _conversationHistory.add(ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: '아니요', // UI에 표시될 레이블
+        type: MessageType.user,
+        timestamp: DateTime.now(),
+      ));
+      _currentStep++; // 다음 질문으로 넘어갑니다.
+    }
 
     if (_currentStep >= _questions.length) {
       _state = ChatState.loading;
