@@ -133,7 +133,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ); 
   }
 
   Widget _buildFeatureChip(String text) {
