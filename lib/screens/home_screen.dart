@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'chat_screen.dart';
-import 'api_test_screen.dart'; // 추가
+import 'face_analysis_screen.dart';
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,19 +29,22 @@ class HomeScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // 크리스마스 애니메이션 (Lottie)
-                    Container(
+                    SizedBox(
                       height: 200,
-                      child: Icon(
-                        Icons.card_giftcard,
-                        size: 120,
-                        color: Colors.white,
+                      child: Lottie.asset(
+                        'assets/animations/christmas.json',
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.card_giftcard,
+                            size: 120,
+                            color: Colors.white,
+                          );
+                        },
                       ),
-                      // Lottie.asset('assets/animations/christmas.json')를 사용하려면
-                      // assets 폴더에 애니메이션 파일 추가 필요
                     ),
-                    SizedBox(height: 24),
-                    Text(
-                      '🎄 크리스마스 선물 AI 🎁',
+                    const SizedBox(height: 24),
+                    const Text(
+                      '크리스마시',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -47,9 +52,9 @@ class HomeScreen extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Text(
                         '선물 고민을 말씀해주세요\nAI가 완벽한 선물을 찾아드립니다',
                         style: TextStyle(
@@ -64,15 +69,10 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    _buildFeatureChip('💬 자연어 대화'),
-                    SizedBox(height: 8),
-                    _buildFeatureChip('🎯 맞춤형 추천'),
-                    SizedBox(height: 8),
-                    _buildFeatureChip('💰 예산별 제안'),
-                    SizedBox(height: 24),
+                    // 기본 선물 찾기 버튼
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -80,16 +80,11 @@ class HomeScreen extends StatelessWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => ChatScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const ChatScreen(),
+                            ),
                           );
                         },
-                        child: Text(
-                          '선물 찾기 시작',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.red[700],
@@ -98,31 +93,66 @@ class HomeScreen extends StatelessWidget {
                           ),
                           elevation: 8,
                         ),
+                        child: const Text(
+                          '💬 대화로 선물 찾기',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                    SizedBox(height: 12),
-                    // API 테스트 버튼 추가
+                    
+                    const SizedBox(height: 16),
+                    
+                    // NEW! 얼굴 분석 버튼
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton.icon(
+                      height: 56,
+                      child: ElevatedButton(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => ApiTestScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const FaceAnalysisScreen(),
+                            ),
                           );
                         },
-                        icon: Icon(Icons.bug_report),
-                        label: Text(
-                          'API 키 테스트 (개발용)',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        style: OutlinedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.2),
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withOpacity(0.5)),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(28),
+                            side: const BorderSide(color: Colors.white, width: 2),
                           ),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.purple[400],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'NEW',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              '👤 얼굴로 선물 찾기',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -133,19 +163,19 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    ); 
+    );
   }
 
   Widget _buildFeatureChip(String text) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
-        style: TextStyle(
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 14,
           fontWeight: FontWeight.w500,
