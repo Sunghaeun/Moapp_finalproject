@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:lottie/lottie.dart';
 import '../services/face_analysis_service.dart';
 import '../services/openai_service.dart';
 import '../services/naver_shopping_service.dart';
 import '../models/gift_model.dart';
 import '../widgets/gift_card.dart';
-import '../models/chat_message.dart';
 
 class FaceAnalysisScreen extends StatefulWidget {
   const FaceAnalysisScreen({super.key});
@@ -17,88 +15,113 @@ class FaceAnalysisScreen extends StatefulWidget {
 }
 
 class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
-  final FaceAnalysisService _faceService = FaceAnalysisService();
+  final _picker = ImagePicker();
   final OpenAIService _aiService = OpenAIService();
   final NaverShoppingService _naverService = NaverShoppingService();
 
   XFile? _selectedImage;
-  FaceAnalysisResult? _analysisResult;
+  String? _analysisResultText;
   List<Gift> _recommendedGifts = [];
   bool _isAnalyzing = false;
   bool _isLoadingGifts = false;
+  int _recommendationAttempt = 0; // 추천 시도 횟수
 
   @override
   void dispose() {
-    _faceService.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? image = await _faceService.pickImage(source: source);
+    final XFile? image = await _picker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
     if (image == null) return;
 
     setState(() {
       _selectedImage = image;
-      _analysisResult = null;
+      _analysisResultText = null;
       _recommendedGifts = [];
-      _isAnalyzing = true;
+      _recommendationAttempt = 0;
     });
 
-    // 얼굴 분석
-    final result = await _faceService.analyzeFace(image.path);
-
-    if (result == null) {
-      setState(() => _isAnalyzing = false);
-      _showErrorDialog('얼굴을 찾을 수 없어요', '사진에 얼굴이 명확하게 나오도록 다시 찍어주세요.');
-      return;
-    }
-
-    setState(() {
-      _analysisResult = result;
-      _isAnalyzing = false;
-    });
+    _isAnalyzing = false; // ML Kit 분석이 없어졌으므로 바로 선물 추천으로
 
     // 선물 추천 받기
     _getGiftRecommendations();
   }
 
   Future<void> _getGiftRecommendations() async {
-    if (_analysisResult == null) return;
+    if (_selectedImage == null) return;
 
     setState(() => _isLoadingGifts = true);
+    _recommendationAttempt++;
 
     try {
-      // AI에게 얼굴 분석 결과를 바탕으로 추천 요청
-      final prompt = '''
-받는 사람 분석 결과:
-- 연령대: ${_analysisResult!.estimatedAge}
-- 성격: ${_analysisResult!.getPersonalityDescription()}
-- 분위기: ${_analysisResult!.mood}
-- 미소: ${_analysisResult!.isSmiling ? "밝게 웃고 있음" : "진지한 표정"}
-
-이 분석을 바탕으로 어울리는 선물을 추천해주세요.
-${_analysisResult!.getGiftRecommendationHint()}
-''';
-
-      final response = await _aiService.getRecommendation(
-        userInput: prompt,
-        conversationHistory: [],
+      // AI에게 이미지 분석 및 추천 요청
+      final response = await _aiService.getRecommendationFromImage(
+        imagePath: _selectedImage!.path,
+        attemptCount: _recommendationAttempt,
       );
 
+      print('=== AI 응답 ===');
+      print('분석: ${response.analysis}');
       print('검색어: ${response.searchQuery}');
 
       // 네이버 쇼핑 검색
       final gifts = await _naverService.search(response.searchQuery);
 
       setState(() {
+        _analysisResultText = response.analysis;
         _recommendedGifts = gifts;
         _isLoadingGifts = false;
       });
+
+      if (gifts.isEmpty) {
+        _showRetryDialog(response.searchQuery);
+      }
     } catch (e) {
       print('선물 추천 오류: $e');
       setState(() => _isLoadingGifts = false);
-      _showErrorDialog('추천 실패', '선물 추천 중 오류가 발생했어요. 다시 시도해주세요.');
+      _showErrorDialog('추천 실패', 
+          '선물 추천 중 오류가 발생했어요.\n\n'
+          '오류: ${e.toString()}\n\n'
+          '다시 시도하거나 다른 사진을 선택해주세요.');
     }
+  }
+
+  void _showRetryDialog(String failedQuery) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('검색 결과 없음'),
+          ],
+        ),
+        content: Text(
+          '"$failedQuery" 검색 결과가 없어요.\n\n'
+          '다른 선물을 찾아볼까요?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _getGiftRecommendations(); // 재시도
+            },
+            child: const Text('다시 추천받기'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErrorDialog(String title, String message) {
@@ -141,13 +164,20 @@ ${_analysisResult!.getGiftRecommendationHint()}
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (_analysisResultText != null)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: '다른 선물 추천받기',
+              onPressed: _isLoadingGifts ? null : _getGiftRecommendations,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildImageSection(),
-            if (_isAnalyzing) _buildAnalyzingSection(),
-            if (_analysisResult != null && !_isAnalyzing) _buildResultSection(),
+            if (_analysisResultText != null) _buildResultSection(),
             if (_isLoadingGifts) _buildLoadingGiftsSection(),
             if (_recommendedGifts.isNotEmpty && !_isLoadingGifts) _buildGiftSection(),
           ],
@@ -191,7 +221,7 @@ ${_analysisResult!.getGiftRecommendationHint()}
             ),
             const SizedBox(height: 12),
             Text(
-              '얼굴을 분석해서 딱 맞는 선물을 찾아드려요!',
+              '얼굴을 정밀 분석해서 딱 맞는 선물을 찾아드려요!',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
@@ -222,12 +252,11 @@ ${_analysisResult!.getGiftRecommendationHint()}
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 시뮬레이터에서는 카메라 비활성화
               _buildActionButton(
                 icon: Icons.camera_alt_rounded,
                 label: '카메라',
                 color: Colors.grey[400]!,
-                onPressed: null, // 비활성화
+                onPressed: null, // 시뮬레이터에서는 비활성화
               ),
               const SizedBox(width: 16),
               _buildActionButton(
@@ -247,7 +276,7 @@ ${_analysisResult!.getGiftRecommendationHint()}
     required IconData icon,
     required String label,
     required Color color,
-    required VoidCallback? onPressed, // nullable로 변경
+    required VoidCallback? onPressed,
   }) {
     return ElevatedButton.icon(
       onPressed: onPressed,
@@ -261,35 +290,6 @@ ${_analysisResult!.getGiftRecommendationHint()}
           borderRadius: BorderRadius.circular(16),
         ),
         elevation: onPressed == null ? 0 : 4,
-      ),
-    );
-  }
-
-  Widget _buildAnalyzingSection() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 150,
-            child: Lottie.asset(
-              'assets/animations/snowman_thinking.json',
-              errorBuilder: (context, error, stackTrace) {
-                return const CircularProgressIndicator();
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            '🔍 얼굴 분석 중...',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '잠시만 기다려주세요',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
-        ],
       ),
     );
   }
@@ -327,64 +327,19 @@ ${_analysisResult!.getGiftRecommendationHint()}
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  '분석 결과',
+                  'AI 분석 결과',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          _buildResultItem(
-            icon: Icons.sentiment_satisfied_alt,
-            label: '감지된 감정',
-            value: '${_analysisResult!.getEmotionEmoji()} ${_analysisResult!.detectedEmotion}',
-          ),
-          _buildResultItem(
-            icon: Icons.mood,
-            label: '표정',
-            value: _analysisResult!.isSmiling ? '😊 밝게 웃고 있어요' : '😌 차분한 표정이에요',
-          ),
-          _buildResultItem(
-            icon: Icons.cake,
-            label: '추정 연령',
-            value: _analysisResult!.estimatedAge,
-          ),
-          _buildResultItem(
-            icon: Icons.psychology,
-            label: '성격',
-            value: _analysisResult!.getPersonalityDescription(),
-          ),
-          _buildResultItem(
-            icon: Icons.wb_sunny,
-            label: '분위기',
-            value: '${_analysisResult!.mood} 느낌',
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.lightbulb, color: Colors.orange, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      '추천 힌트',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _analysisResult!.getGiftRecommendationHint(),
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
-                ),
-              ],
+          Text(
+            _analysisResultText ?? '분석 결과가 없습니다.',
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.6,
+              color: Colors.grey[800],
             ),
           ),
         ],
@@ -392,43 +347,10 @@ ${_analysisResult!.getGiftRecommendationHint()}
     );
   }
 
-  Widget _buildResultItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.purple[700], size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Color _getConfidenceColor(double confidence) {
+    if (confidence > 0.7) return Colors.green;
+    if (confidence > 0.5) return Colors.orange;
+    return Colors.grey;
   }
 
   Widget _buildLoadingGiftsSection() {
@@ -436,23 +358,17 @@ ${_analysisResult!.getGiftRecommendationHint()}
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          SizedBox(
-            height: 150,
-            child: Lottie.asset(
-              'assets/animations/snowman_thinking.json',
-              errorBuilder: (context, error, stackTrace) {
-                return const CircularProgressIndicator();
-              },
-            ),
-          ),
+          const CircularProgressIndicator(),
           const SizedBox(height: 24),
-          const Text(
-            '🎁 맞춤 선물 찾는 중...',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Text(
+            _recommendationAttempt == 1 
+                ? '🎁 AI가 사진을 분석하고 있어요...'
+                : '🔄 AI가 다른 선물을 찾고 있어요...',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
-            '분석 결과를 바탕으로 최적의 선물을 찾고 있어요',
+            '나이, 표정, 분위기를 파악하여 맞춤 선물을 추천합니다.',
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
@@ -483,9 +399,11 @@ ${_analysisResult!.getGiftRecommendationHint()}
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '추천 선물',
-                        style: TextStyle(
+                      Text(
+                        _recommendationAttempt > 1 
+                            ? '${_recommendationAttempt}번째 추천 선물'
+                            : '추천 선물',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -500,6 +418,11 @@ ${_analysisResult!.getGiftRecommendationHint()}
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: _getGiftRecommendations,
+                  tooltip: '다른 선물 보기',
                 ),
               ],
             ),
