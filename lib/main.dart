@@ -10,7 +10,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // 환경 변수 로드
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: ".env"); 
   
   runApp(const MyApp());
 }
