@@ -21,27 +21,85 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: '크리스마시',
+        title: '선물의 정석',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFFEF463F), // Primary Red
-            primary: const Color(0xFFEF463F),
-            secondary: const Color(0xFF51934C), // Accent Green
-            background: const Color(0xFFFFFefa), // Light Yellow/Cream
-            surface: const Color(0xFFFFFefa),
+            primary: const Color(0xFFEF463F), // Red - 주요 액션
+            secondary: const Color(0xFF51934C), // Green - 보조 액션
+            tertiary: const Color(0xFF012D5C), // Dark Blue - 강조
+            surface: const Color(0xFFFFFEFA), // Light Yellow - 배경
+            background: const Color(0xFFFFFEFA),
             onPrimary: Colors.white,
             onSecondary: Colors.white,
+            onTertiary: Colors.white,
             onBackground: const Color(0xFF012D5C), // Dark Blue for text
             onSurface: const Color(0xFF012D5C),
-            error: Colors.red.shade900,
+            error: const Color(0xFFBF3832),
             brightness: Brightness.light,
           ),
+          scaffoldBackgroundColor: const Color(0xFFFFFEFA), // Light Yellow
+          cardTheme: CardThemeData(
+            color: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
           appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFFFFFEFA),
             foregroundColor: Color(0xFF012D5C),
             centerTitle: true,
             elevation: 0,
+            titleTextStyle: TextStyle(
+              color: Color(0xFF012D5C),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: const Color(0xFF012D5C).withOpacity(0.2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: const Color(0xFF012D5C).withOpacity(0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEF463F), width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+          chipTheme: ChipThemeData(
+            backgroundColor: const Color(0xFFFDEDEC), // Light Red
+            selectedColor: const Color(0xFFEF463F),
+            labelStyle: const TextStyle(
+              color: Color(0xFF012D5C),
+              fontWeight: FontWeight.w500,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
           ),
         ),
         home: const HomeScreen(),

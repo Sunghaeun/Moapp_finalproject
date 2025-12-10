@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/face_analysis_service.dart';
 import '../services/openai_service.dart';
 import '../services/naver_shopping_service.dart';
 import '../models/gift_model.dart';
@@ -31,9 +30,9 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(
-      source: source,
+      source: ImageSource.gallery,
       maxWidth: 1024,
       maxHeight: 1024,
       imageQuality: 80,
@@ -244,23 +243,11 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
             ),
           ],
           const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildActionButton(
-                icon: Icons.camera_alt_rounded,
-                label: '카메라',
-                color: Theme.of(context).colorScheme.secondary,
-                onPressed: null, // 시뮬레이터에서는 비활성화
-              ),
-              const SizedBox(width: 16),
-              _buildActionButton(
-                icon: Icons.photo_library_rounded,
-                label: '갤러리에서 선택',
-                color: Theme.of(context).colorScheme.primary,
-                onPressed: () => _pickImage(ImageSource.gallery),
-              ),
-            ],
+          _buildActionButton(
+            icon: Icons.photo_library_rounded,
+            label: '갤러리에서 사진 선택',
+            color: Theme.of(context).colorScheme.primary,
+            onPressed: _pickImage,
           ),
         ],
       ),

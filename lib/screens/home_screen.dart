@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ChatScreen(),
+                              builder: (context) => const ImprovedChatScreen(),
                             ),
                           );
                         },
@@ -82,14 +82,14 @@ class HomeScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
                           ),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                           elevation: 8,
                         ),
                         child: const Text(
                           '💬 대화로 선물 찾기',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
                         ),
                       ),
                     ),
@@ -116,6 +116,10 @@ class HomeScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(28),
                             side: const BorderSide(color: Color(0xFF51934C), width: 2),
                           ),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                           elevation: 0,
                         ),
                         child: Row(
@@ -139,10 +143,6 @@ class HomeScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             const Text(
                               '👤 얼굴로 선물 찾기',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
                             ),
                           ],
                         ),
@@ -153,24 +153,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );

@@ -1,88 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/gift_model.dart';
-import '../screens/gift_detail_screen.dart';
+
 class GiftCard extends StatelessWidget {
   final Gift gift;
 
-  const GiftCard({required this.gift});
+  const GiftCard({super.key, required this.gift});
+
+  Future<void> _launchURL(String urlString, BuildContext context) async {
+    final Uri uri = Uri.parse(urlString);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      // URL을 열 수 없는 경우에 대한 예외 처리
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('링크를 열 수 없습니다: $urlString')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final numberFormat = NumberFormat.currency(locale: 'ko_KR', symbol: '');
+
     return Card(
-      margin: EdgeInsets.only(top: 12),
+      // main.dart에 정의된 CardTheme을 사용합니다.
+      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => GiftDetailScreen(gift: gift),
-            ),
-          );
-        },
+        onTap: () => _launchURL(gift.purchaseLink, context),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 1. 이미지
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.network(
                   gift.imageUrl,
-                  width: 80,
-                  height: 80,
+                  width: 100,
+                  height: 100,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      width: 80,
-                      height: 80,
-                      color: Colors.grey[300],
-                      child: Icon(Icons.card_giftcard),
+                      width: 100,
+                      height: 100,
+                      color: Colors.grey[200],
+                      child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
                     );
                   },
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 16),
+              // 2. 상품 정보
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       gift.name,
-                      style: TextStyle(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        color: colorScheme.onSurface,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      '${gift.price.toString().replaceAllMapped(
-                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                        (Match m) => '${m[1]},',
-                      )}원',
-                      style: TextStyle(
-                        color: Colors.red[700],
-                        fontWeight: FontWeight.bold,
+                      '${numberFormat.format(gift.price)}원',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Wrap(
-                      spacing: 4,
-                      children: gift.tags.take(3).map((tag) {
-                        return Chip(
-                          label: Text(
-                            tag,
-                            style: TextStyle(fontSize: 11),
-                          ),
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        );
-                      }).toList(),
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: gift.tags.take(2).map((tag) => Chip(
+                        label: Text(tag),
+                        // main.dart에 정의된 ChipTheme을 사용합니다.
+                      )).toList(),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right),
             ],
           ),
         ),
