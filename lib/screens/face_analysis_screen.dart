@@ -68,19 +68,26 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
 
       print('=== AI 응답 ===');
       print('분석: ${response.analysis}');
-      print('검색어: ${response.searchQuery}');
+      print('검색어 리스트: ${response.searchQueries}');
 
-      // 네이버 쇼핑 검색
-      final gifts = await _naverService.search(response.searchQuery);
+      // 네이버 쇼핑 검색 (여러 검색어 처리)
+      final List<Gift> giftResults = [];
+      for (final query in response.searchQueries) {
+        final gifts = await _naverService.search(query, display: 1); // 각 검색어 당 1개만 가져옴
+        if (gifts.isNotEmpty) {
+          giftResults.add(gifts.first); // 첫번째 결과만 리스트에 추가
+        }
+      }
 
       setState(() {
         _analysisResultText = response.analysis;
-        _recommendedGifts = gifts;
+        _recommendedGifts = giftResults;
         _isLoadingGifts = false;
       });
 
-      if (gifts.isEmpty) {
-        _showRetryDialog(response.searchQuery);
+      if (giftResults.isEmpty) {
+        // 모든 검색어에 대해 결과가 없는 경우
+        _showRetryDialog(response.searchQueries.join(', '));
       }
     } catch (e) {
       print('선물 추천 오류: $e');
@@ -152,18 +159,10 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
       appBar: AppBar(
         title: const Text(
           '👤 얼굴로 선물 찾기',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.purple[400]!, Colors.purple[700]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           if (_analysisResultText != null)
             IconButton(
@@ -191,11 +190,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.purple[50]!, Colors.white],
-        ),
+        color: Theme.of(context).colorScheme.background,
       ),
       child: Column(
         children: [
@@ -206,12 +201,12 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
               decoration: BoxDecoration(
                 color: Colors.grey[200],
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.purple[200]!, width: 3),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 3),
               ),
               child: Icon(
                 Icons.person,
                 size: 100,
-                color: Colors.grey[400],
+                color: Colors.grey[350],
               ),
             ),
             const SizedBox(height: 24),
@@ -233,7 +228,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -255,14 +250,14 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
               _buildActionButton(
                 icon: Icons.camera_alt_rounded,
                 label: '카메라',
-                color: Colors.grey[400]!,
+                color: Theme.of(context).colorScheme.secondary,
                 onPressed: null, // 시뮬레이터에서는 비활성화
               ),
               const SizedBox(width: 16),
               _buildActionButton(
                 icon: Icons.photo_library_rounded,
                 label: '갤러리에서 선택',
-                color: Colors.blue[600]!,
+                color: Theme.of(context).colorScheme.primary,
                 onPressed: () => _pickImage(ImageSource.gallery),
               ),
             ],
@@ -299,9 +294,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue[50]!, Colors.purple[50]!],
-        ),
+        color: const Color(0xFFEEF4ED), // Light Green from palette
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -322,7 +315,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.auto_awesome, color: Colors.purple, size: 28),
+                child: Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.secondary, size: 28),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -345,12 +338,6 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
         ],
       ),
     );
-  }
-
-  Color _getConfidenceColor(double confidence) {
-    if (confidence > 0.7) return Colors.green;
-    if (confidence > 0.5) return Colors.orange;
-    return Colors.grey;
   }
 
   Widget _buildLoadingGiftsSection() {
@@ -386,14 +373,12 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green[400]!, Colors.green[600]!],
-              ),
+              color: Theme.of(context).colorScheme.secondary,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                const Icon(Icons.card_giftcard, color: Colors.white, size: 28),
+                const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

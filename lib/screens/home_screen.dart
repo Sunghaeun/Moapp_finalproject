@@ -11,16 +11,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.red[700]!,
-              Colors.red[900]!,
-            ],
-          ),
-        ),
+        color: Theme.of(context).colorScheme.background,
         child: SafeArea(
           child: Column(
             children: [
@@ -37,7 +28,7 @@ class HomeScreen extends StatelessWidget {
                           return const Icon(
                             Icons.card_giftcard,
                             size: 120,
-                            color: Colors.white,
+                            color: Color(0xFFEF463F),
                           );
                         },
                       ),
@@ -48,7 +39,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Color(0xFF012D5C),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -56,10 +47,10 @@ class HomeScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Text(
-                        '선물 고민을 말씀해주세요\nAI가 완벽한 선물을 찾아드립니다',
+                        '어떤 선물을 찾고 계신가요?\nAI가 완벽한 크리스마스 선물을 찾아드립니다',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: const Color(0xFF012D5C).withOpacity(0.8),
                           height: 1.5,
                         ),
                         textAlign: TextAlign.center,
@@ -86,8 +77,8 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.red[700],
+                          backgroundColor: const Color(0xFFEF463F), // Primary Red
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
                           ),
@@ -119,11 +110,11 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: const Color(0xFF51934C), // Accent Green
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
-                            side: const BorderSide(color: Colors.white, width: 2),
+                            side: const BorderSide(color: Color(0xFF51934C), width: 2),
                           ),
                           elevation: 0,
                         ),
@@ -133,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.purple[400],
+                                color: const Color(0xFF51934C),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
@@ -141,6 +132,7 @@ class HomeScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),

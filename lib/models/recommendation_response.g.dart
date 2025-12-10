@@ -10,12 +10,14 @@ RecommendationResponse _$RecommendationResponseFromJson(
         Map<String, dynamic> json) =>
     RecommendationResponse(
       analysis: json['analysis'] as String,
-      searchQuery: json['searchQuery'] as String,
+      searchQueries: (json['searchQueries'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$RecommendationResponseToJson(
         RecommendationResponse instance) =>
     <String, dynamic>{
       'analysis': instance.analysis,
-      'searchQuery': instance.searchQuery,
+      'searchQueries': instance.searchQueries,
     };

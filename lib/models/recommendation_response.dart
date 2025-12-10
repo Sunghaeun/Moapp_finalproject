@@ -5,11 +5,11 @@ part 'recommendation_response.g.dart';
 @JsonSerializable(explicitToJson: true)
 class RecommendationResponse {
   final String analysis;
-  final String searchQuery;
+  final List<String> searchQueries;
 
   RecommendationResponse({
     required this.analysis,
-    required this.searchQuery,
+    required this.searchQueries,
   });
 
   factory RecommendationResponse.fromJson(Map<String, dynamic> json) =>

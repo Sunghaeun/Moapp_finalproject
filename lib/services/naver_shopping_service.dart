@@ -9,7 +9,7 @@ class NaverShoppingService {
   final String clientSecret = dotenv.env['NAVER_CLIENT_SECRET'] ?? ''; // 또는 '직접_입력'
   final String baseUrl = 'https://openapi.naver.com/v1/search/shop.json';
 
-  Future<List<Gift>> search(String query, {int retryCount = 0}) async {
+  Future<List<Gift>> search(String query, {int display = 10, int retryCount = 0}) async {
     // ========== 디버깅 출력 시작 ==========
     print('\n========== 네이버 API 디버깅 정보 ==========');
     print('📋 .env 파일에서 로드된 모든 키:');
@@ -46,7 +46,7 @@ class NaverShoppingService {
     print('검색어: $query');
 
     try {
-      final url = '$baseUrl?query=${Uri.encodeComponent(query)}&display=10&sort=sim';
+      final url = '$baseUrl?query=${Uri.encodeComponent(query)}&display=$display&sort=sim';
       print('요청 URL: $url');
       print('헤더 Client ID: ${clientId.substring(0, clientId.length > 10 ? 10 : clientId.length)}...');
       
