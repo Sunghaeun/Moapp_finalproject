@@ -35,6 +35,9 @@ dependencies:
   flutter_dotenv: ^5.1.0
   url_launcher: ^6.2.2
   intl: ^0.18.1
+  google_maps_flutter: ^2.14.0
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

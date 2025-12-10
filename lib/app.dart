@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import 'home.dart';
 import 'login.dart';
+import 'map.dart';
 
 // TODO: Convert ShrineApp to stateful widget (104)
 class ShrineApp extends StatelessWidget {
@@ -33,6 +34,7 @@ class ShrineApp extends StatelessWidget {
         // TODO: Make currentCategory field take _currentCategory (104)
         // TODO: Pass _currentCategory for frontLayer (104)
         // TODO: Change backLayer field value to CategoryMenuPage (104)
+        '/map': (BuildContext context) => const MapPage(),
       },
       // TODO: Customize the theme (103)
       theme: ThemeData.light(useMaterial3: true),
