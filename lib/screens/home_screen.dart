@@ -4,13 +4,105 @@ import 'package:lottie/lottie.dart';
 import 'chat_screen.dart';
 import 'face_analysis_screen.dart';
 import 'map_screen.dart';
+import 'cart_screen.dart';
+import 'advent_calendar_screen.dart';
+import '../services/cart_service.dart';
+import '../services/advent_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final CartService _cartService = CartService();
+  final AdventService _adventService = AdventService();
+  int _cartCount = 0;
+  int _adventProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCounts();
+  }
+
+  Future<void> _updateCounts() async {
+    // 두 비동기 작업을 동시에 실행하여 시간 절약
+    final results = await Future.wait([
+      _cartService.getCartCount(),
+      _adventService.getCompletedMissionCount(),
+    ]);
+    
+    final cartCount = results[0];
+    final adventProgress = results[1];
+    setState(() {
+      _cartCount = cartCount;
+      _adventProgress = adventProgress;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          '크리스마시',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF012D5C),
+          ),
+        ),
+        backgroundColor: const Color(0xFFFFFEFA),
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.shopping_cart_outlined,
+                  color: Color(0xFF012D5C),
+                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CartScreen()),
+                  );
+                  _updateCounts(); // 화면에서 돌아오면 카운트 업데이트
+                },
+              ),
+              if (_cartCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF463F),
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      _cartCount > 99 ? '99+' : '$_cartCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
       body: Container(
         color: Theme.of(context).colorScheme.background,
         child: SafeArea(
@@ -64,18 +156,82 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
+                    // 어드벤트 캘린더 진행률
+                    GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AdventCalendarScreen()),
+                        );
+                        _updateCounts(); // 화면에서 돌아오면 카운트 업데이트
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF012D5C),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('🎄 크리스마스 완성도', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Stack(
+                              children: [
+                                Container(
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                FractionallySizedBox(
+                                  widthFactor: _adventProgress / 24,
+                                  child: Container(
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF463F),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                ),
+                                Align(
+                                  child: Text('$_adventProgress / 24', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // 기본 선물 찾기 버튼
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const ImprovedChatScreen(),
                             ),
                           );
+                          _updateCounts(); // 돌아올 때 카운트 업데이트
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFEF463F), // Primary Red
@@ -102,13 +258,14 @@ class HomeScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const FaceAnalysisScreen(),
                             ),
                           );
+                          _updateCounts(); // 돌아올 때 카운트 업데이트
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,

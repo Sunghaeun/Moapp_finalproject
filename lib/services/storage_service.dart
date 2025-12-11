@@ -7,7 +7,75 @@ import '../models/chat_message.dart';
 class StorageService {
   static const String _conversationKey = 'conversation_history';
   static const String _wishlistKey = 'wishlist';
+  static const String _cartKey = 'shopping_cart'; // 새로운 장바구니 키
 
+  // ========== 장바구니 기능 ==========
+  
+  // 장바구니에 추가
+  Future<void> addToCart(Gift gift) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = prefs.getString(_cartKey);
+    
+    List<Map<String, dynamic>> cart = [];
+    if (cartJson != null) {
+      cart = List<Map<String, dynamic>>.from(jsonDecode(cartJson));
+    }
+    
+    // 중복 체크
+    if (!cart.any((item) => item['id'] == gift.id)) {
+      cart.add(gift.toJson());
+      await prefs.setString(_cartKey, jsonEncode(cart));
+    }
+  }
+
+  // 장바구니에서 제거
+  Future<void> removeFromCart(String giftId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = prefs.getString(_cartKey);
+    
+    if (cartJson != null) {
+      List<Map<String, dynamic>> cart = List<Map<String, dynamic>>.from(jsonDecode(cartJson));
+      cart.removeWhere((item) => item['id'] == giftId);
+      await prefs.setString(_cartKey, jsonEncode(cart));
+    }
+  }
+
+  // 장바구니 아이템 가져오기
+  Future<List<Gift>> getCartItems() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = prefs.getString(_cartKey);
+    
+    if (cartJson == null) return [];
+    
+    List<Map<String, dynamic>> cart = List<Map<String, dynamic>>.from(jsonDecode(cartJson));
+    return cart.map((json) => Gift.fromJson(json)).toList();
+  }
+
+  // 장바구니에 있는지 확인
+  Future<bool> isInCart(String giftId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = prefs.getString(_cartKey);
+    
+    if (cartJson == null) return false;
+    
+    List<Map<String, dynamic>> cart = List<Map<String, dynamic>>.from(jsonDecode(cartJson));
+    return cart.any((item) => item['id'] == giftId);
+  }
+
+  // 장바구니 비우기
+  Future<void> clearCart() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cartKey);
+  }
+
+  // 장바구니 아이템 개수
+  Future<int> getCartCount() async {
+    final items = await getCartItems();
+    return items.length;
+  }
+
+  // ========== 기존 대화 히스토리 기능 ==========
+  
   // 대화 히스토리 저장
   Future<void> saveConversation(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,6 +123,8 @@ class StorageService {
     await prefs.remove(_conversationKey);
   }
 
+  // ========== 위시리스트 기능 ==========
+  
   // 위시리스트 저장
   Future<void> saveToWishlist(String giftId) async {
     final prefs = await SharedPreferences.getInstance();

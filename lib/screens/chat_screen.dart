@@ -1,4 +1,4 @@
-// lib/screens/improved_chat_screen.dart
+// lib/screens/chat_screen.dart
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import '../models/gift_model.dart';
@@ -733,13 +733,12 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
               child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + 1, // 추가 항목(버튼 또는 타이핑)을 위한 공간
+              itemCount: _messages.length + 1,
               itemBuilder: (context, index) {
                 if (index < _messages.length) {
                   return ChatBubble(message: _messages[index]);
                 }
 
-                // 마지막 항목
                 if (_isTyping) {
                   return Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -759,10 +758,8 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
                 }
                 return _buildFeedbackButtons();
               },
-            
-            
             ),
-      ),
+          ),
           
           Container(
             decoration: BoxDecoration(
