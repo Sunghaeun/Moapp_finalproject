@@ -9,7 +9,9 @@ import '../widgets/typing_indicator.dart';
 import '../widgets/gift_card.dart';
 
 class ImprovedChatScreen extends StatefulWidget {
-  const ImprovedChatScreen({super.key});
+  final String? initialPrompt;
+
+  const ImprovedChatScreen({super.key, this.initialPrompt});
 
   @override
   State<ImprovedChatScreen> createState() => _ImprovedChatScreenState();
@@ -78,7 +80,11 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
   @override
   void initState() {
     super.initState();
-    _startConversation();
+    if (widget.initialPrompt != null && widget.initialPrompt!.isNotEmpty) {
+      _startWithPrompt(widget.initialPrompt!);
+    } else {
+      _startConversation();
+    }
   }
 
   @override
@@ -86,6 +92,22 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _startWithPrompt(String prompt) {
+    // 1. 시스템 시작 메시지 추가
+    _addMessage(
+      ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: '안녕하세요! 크리스마시 AI입니다. 무엇을 도와드릴까요?',
+        type: MessageType.assistant,
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    // 2. 전달받은 프롬프트로 바로 추천 시작
+    _messageController.text = prompt;
+    _handleTextMessage();
   }
 
   void _startConversation() {
