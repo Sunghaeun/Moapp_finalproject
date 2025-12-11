@@ -7,7 +7,10 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  google_mlkit_face_detection: ^0.10.0
+  flutter:
+    sdk: flutter
+    
+  google_mlkit_face_detection: ^0.13.1
   image_picker: ^1.0.7
   camera: ^0.10.5
   
@@ -19,7 +22,7 @@ dependencies:
   json_annotation: ^4.8.1
   
   # State Management
-  provider: ^6.1.1
+  provider: ^6.1.5+1
   
   # UI Components
   flutter_markdown: ^0.6.18
@@ -34,10 +37,14 @@ dependencies:
   # Utilities
   flutter_dotenv: ^5.1.0
   url_launcher: ^6.2.2
-  intl: ^0.18.1
+  # intl: ^0.18.1
   google_maps_flutter: ^2.14.0
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
+  firebase_ui_auth: ^3.0.1
 
 dev_dependencies:
   flutter_test:
