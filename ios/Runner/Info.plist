@@ -55,5 +55,16 @@
 	<string>갤러리에서 사진을 선택하여 선물을 추천받을 수 있어요 🖼️</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>비디오 촬영에 필요해요</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+          <string>com.googleusercontent.apps.699646362176-oppsru3hi0n9vfvhh6ge5os4m1m22scm</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

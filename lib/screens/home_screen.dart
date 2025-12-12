@@ -9,6 +9,8 @@ import 'cart_screen.dart';
 import 'advent_calendar_screen.dart';
 import '../services/cart_service.dart';
 import '../services/advent_service.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final AuthService _authService = AuthService();
   final CartService _cartService = CartService();
   final AdventService _adventService = AdventService();
   int _cartCount = 0;
@@ -46,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = _authService.currentUser;
+    final isGuest = user?.isAnonymous ?? false;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -59,7 +65,47 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFFFFFEFA),
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.logout, color: Color(0xFF012D5C)),
+          onPressed: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('로그아웃'),
+                content: const Text('로그아웃 하시겠습니까?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('취소'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('로그아웃'),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              await _authService.signOut();
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              }
+            }
+          },
+        ),
         actions: [
+          if (isGuest)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Chip(
+                label: const Text('게스트', style: TextStyle(fontSize: 12)),
+                backgroundColor: Colors.grey.shade300,
+              ),
+            ),
           Stack(
             children: [
               IconButton(

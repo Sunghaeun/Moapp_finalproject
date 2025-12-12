@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 import 'services/gift_database_service.dart';
 import 'models/gift_model.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -125,7 +126,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      home: const HomeScreen(),
+      home: const LoginScreen(), // 로그인 화면을 첫 화면으로
     );
   }
 }
