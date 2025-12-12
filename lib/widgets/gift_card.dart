@@ -163,7 +163,7 @@ class _GiftCardState extends State<GiftCard> {
                     icon: const Icon(Icons.shopping_bag, size: 18),
                     label: const Text('구매하기'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF51934C),
+                      backgroundColor: colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -182,18 +182,13 @@ class _GiftCardState extends State<GiftCard> {
                     ),
                     label: Text(_isInCart ? '담김' : '담기'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _isInCart 
-                          ? const Color(0xFFEF463F) 
-                          : const Color(0xFF012D5C),
+                      foregroundColor: _isInCart ? colorScheme.error : colorScheme.primary,
                       side: BorderSide(
-                        color: _isInCart 
-                            ? const Color(0xFFEF463F) 
-                            : const Color(0xFF012D5C).withOpacity(0.3),
+                        color: _isInCart ? colorScheme.error : colorScheme.primary.withOpacity(0.3),
                         width: _isInCart ? 2 : 1,
                       ),
-                      backgroundColor: _isInCart 
-                          ? const Color(0xFFEF463F).withOpacity(0.1) 
-                          : null,
+                      backgroundColor:
+                          _isInCart ? colorScheme.error.withOpacity(0.1) : null,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

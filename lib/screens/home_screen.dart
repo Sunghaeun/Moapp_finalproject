@@ -1,12 +1,13 @@
-// screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+
 import 'chat_screen.dart';
 import 'face_analysis_screen.dart';
 import 'map_screen.dart';
 import 'personality_test_screen.dart';
 import 'cart_screen.dart';
 import 'advent_calendar_screen.dart';
+
 import '../services/cart_service.dart';
 import '../services/advent_service.dart';
 
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final CartService _cartService = CartService();
   final AdventService _adventService = AdventService();
+
   int _cartCount = 0;
   int _adventProgress = 0;
 
@@ -29,504 +31,376 @@ class _HomeScreenState extends State<HomeScreen> {
     _updateCounts();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> _updateCounts() async {
     final results = await Future.wait([
       _cartService.getCartCount(),
       _adventService.getCompletedMissionCount(),
     ]);
-    
-    if (mounted) {
-      setState(() {
-        _cartCount = results[0];
-        _adventProgress = results[1];
-      });
-    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _cartCount = results[0];
+      _adventProgress = results[1];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.card_giftcard, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
-            const Text(
-              '크리스마시',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+      appBar: _buildAppBar(),
+      body: _buildBody(),
+    );
+  }
+
+  // ================= AppBar =================
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      leading: const SizedBox(width: 56), // actions 영역과 동일한 너비로 중앙 정렬
+      centerTitle: true,
+      title: Text(
+        'Chrismassy!',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onBackground,
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          Stack(
+      ),
+      actions: [
+        SizedBox(
+          width: 56,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
               IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.shopping_cart_outlined,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CartScreen()),
+                    MaterialPageRoute(builder: (_) => const CartScreen()),
                   );
                   _updateCounts();
                 },
+                icon: Icon(
+                  Icons.shopping_cart_outlined,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               if (_cartCount > 0)
                 Positioned(
                   right: 8,
                   top: 8,
                   child: Container(
-                    padding: const EdgeInsets.all(5),
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.primary,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                        ),
-                      ],
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 20,
-                      minHeight: 20,
-                    ),
-                    child: Text(
-                      _cartCount > 99 ? '99+' : '$_cartCount',
-                      style: const TextStyle(
-                        color: Color(0xFFEF463F),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFEF463F),
-              Color(0xFFBF3832),
-              Color(0xFF012D5C),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                _buildHeader(),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFEFA),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        _buildAdventProgress(),
-                        const SizedBox(height: 32),
-                        _buildActionButtons(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 24),
-      child: Column(
-        children: [
-          Container(
-            height: 160,
-            width: 160,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Lottie.asset(
-              'assets/animations/christmas.json',
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.card_giftcard,
-                    size: 80,
-                    color: Colors.white,
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            '완벽한 선물을 찾아드려요',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'AI가 당신을 위한 특별한 선물을 추천합니다',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdventProgress() {
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AdventCalendarScreen()),
-        );
-        _updateCounts();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF012D5C), Color(0xFF01234A)],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF012D5C).withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Text(
-                      '🎄',
-                      style: TextStyle(fontSize: 24),
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      '크리스마스 완성도',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text(
-                        '보기',
-                        style: TextStyle(
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Center(
+                      child: Text(
+                        '$_cartCount',
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Stack(
-              children: [
-                Container(
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: _adventProgress / 24,
-                  child: Container(
-                    height: 28,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEF463F), Color(0xFFFF6B6B)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFEF463F).withOpacity(0.4),
-                          blurRadius: 8,
-                        ),
-                      ],
                     ),
                   ),
                 ),
-                Container(
-                  height: 28,
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$_adventProgress / 24',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        _buildPrimaryButton(
-          icon: Icons.chat_bubble_outline,
-          label: '대화로 선물 찾기',
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ImprovedChatScreen()),
-            );
-            _updateCounts();
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildSecondaryButton(
-          icon: Icons.face,
-          label: '얼굴로 선물 찾기',
-          badge: 'NEW',
-          color: const Color(0xFF51934C),
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const FaceAnalysisScreen()),
-            );
-            _updateCounts();
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildSecondaryButton(
-          icon: Icons.psychology_outlined,
-          label: '나의 크리스마스 유형은?',
-          badge: null,
-          color: const Color(0xFF012D5C),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const PersonalityTestScreen()),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildSecondaryButton(
-          icon: Icons.map_outlined,
-          label: '지도에서 매장 찾기',
-          badge: null,
-          color: const Color(0xFF51934C),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MapScreen()),
-            );
-          },
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPrimaryButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: double.infinity,
-      height: 70,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEF463F), Color(0xFFFF6B6B)],
-        ),
-        borderRadius: BorderRadius.circular(35),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEF463F).withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+  // ================= Body =================
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAiCard(),
+          const SizedBox(height: 24),
+          const Text(
+            '다양한 기능 둘러보기',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildAdventCard()),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildActionCard(
+                      icon: Icons.face_retouching_natural,
+                      title: '얼굴로 추천',
+                      subtitle: '사진으로 취향 분석',
+                      badge: 'NEW',
+                      color: Theme.of(context).colorScheme.secondary,
+                      onTap: () async {
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const FaceAnalysisScreen()));
+                        _updateCounts();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildActionCard(
+                      icon: Icons.psychology_outlined,
+                      title: '성향 테스트',
+                      subtitle: '나의 크리스마스 유형',
+                      color: Theme.of(context).colorScheme.secondary,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const PersonalityTestScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildActionCard(
+            icon: Icons.map_outlined,
+            title: '선물 지도',
+            subtitle: '주변 선물가게 찾기',
+            color: Theme.of(context).colorScheme.secondary,
+            onTap: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const MapScreen())),
+            isFullWidth: true,
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(35),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.white, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
+    );
+  }
+
+  Widget _buildAiCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shadowColor: Colors.black.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            Lottie.asset(
+              'assets/animations/christmas.json',
+              height: 120,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.auto_awesome, size: 60),
             ),
-          ),
+            const SizedBox(height: 16),
+            const Text(
+              'AI에게 무엇이든 물어보세요',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '선물 받을 사람, 예산, 스타일을 알려주시면\nAI가 완벽한 선물을 찾아드릴게요!',
+              textAlign: TextAlign.center,
+              style:
+                  TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ImprovedChatScreen()));
+                _updateCounts();
+              },
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('AI와 대화 시작하기'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                textStyle:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSecondaryButton({
-    required IconData icon,
-    required String label,
-    String? badge,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: double.infinity,
-      height: 65,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: color.withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildAdventCard() {
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdventCalendarScreen()),
+        );
+        _updateCounts();
+      },
+      child: Container(
+        height: 240, // 고정 높이
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4A5C8A), Color(0xFF3A4E7A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(32),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (badge != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3A4E7A).withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '어드벤트 캘린더',
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'D-25',
+              style: TextStyle(fontSize: 14, color: Colors.white70),
+            ),
+            const Spacer(),
+            Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: CircularProgressIndicator(
+                      value: (_adventProgress / 24).clamp(0.0, 1.0),
+                      strokeWidth: 8,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(
-                        fontSize: 11,
+                  ),
+                  Text(
+                    '${(_adventProgress / 24 * 100).toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            const Center(
+              child: Text(
+                '미션 확인하기',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    String? badge,
+    required VoidCallback onTap,
+    bool isFullWidth = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: isFullWidth ? null : 112, // 고정 높이
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[200]!),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: isFullWidth
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          children: [
+            if (isFullWidth)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: color, size: 24),
+                  const SizedBox(width: 8),
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold)),
+                ],
+              )
+            else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: color, size: 28),
+                  if (badge != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        badge,
+                        style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
                 ],
-                Icon(icon, color: color, size: 26),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ],
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.black.withOpacity(0.6),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

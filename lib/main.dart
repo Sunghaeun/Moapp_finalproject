@@ -40,37 +40,38 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFEF463F), // Primary Red
-          primary: const Color(0xFFEF463F),
-          secondary: const Color(0xFF51934C),
-          tertiary: const Color(0xFF012D5C),
-          surface: const Color(0xFFFFFEFA),
-          background: const Color(0xFFFFFEFA),
+          seedColor: const Color(0xFF3A4E7A), // Sophisticated Blue
+          primary: const Color(0xFF3A4E7A),
+          secondary: const Color(0xFF6A7B76), // Calm Green-Gray
+          tertiary: const Color(0xFFC0A06E), // Elegant Gold
+          surface: const Color(0xFFFDFDFD),
+          background: const Color(0xFFF7F7F7),
           onPrimary: Colors.white,
-          onSecondary: Colors.white,
+          onSecondary: Colors.black87,
           onTertiary: Colors.white,
-          onBackground: const Color(0xFF012D5C),
-          onSurface: const Color(0xFF012D5C),
-          error: const Color(0xFFBF3832),
+          onBackground: const Color(0xFF1C1B1F),
+          onSurface: const Color(0xFF1C1B1F),
+          error: const Color(0xFFB00020),
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFFFFEFA),
+        fontFamily: 'Pretendard',
+        scaffoldBackgroundColor: const Color(0xFFF7F7F7),
 
         cardTheme: CardThemeData(
           color: Colors.white,
-          elevation: 2,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
 
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFFFFEFA),
-          foregroundColor: Color(0xFF012D5C),
+          backgroundColor: Color(0xFFF7F7F7),
+          foregroundColor: Color(0xFF1C1B1F),
           centerTitle: true,
           elevation: 0,
           titleTextStyle: TextStyle(
-            color: Color(0xFF012D5C),
+            color: Color(0xFF1C1B1F),
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -78,7 +79,7 @@ class MyApp extends StatelessWidget {
 
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            elevation: 4,
+            elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -95,27 +96,25 @@ class MyApp extends StatelessWidget {
           fillColor: Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: const Color(0xFF012D5C).withOpacity(0.2)),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: const Color(0xFF012D5C).withOpacity(0.2)),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFEF463F), width: 2),
+            borderSide: const BorderSide(color: Color(0xFF3A4E7A), width: 2),
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
 
         chipTheme: ChipThemeData(
-          backgroundColor: const Color(0xFFFDEDEC),
-          selectedColor: const Color(0xFFEF463F),
+          backgroundColor: const Color(0xFF3A4E7A).withOpacity(0.1),
+          selectedColor: const Color(0xFF3A4E7A),
           labelStyle: const TextStyle(
-            color: Color(0xFF012D5C),
+            color: Color(0xFF3A4E7A),
             fontWeight: FontWeight.w500,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
