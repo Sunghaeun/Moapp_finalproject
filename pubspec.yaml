@@ -51,6 +51,7 @@ dependencies:
   flutter_swiper_view: ^1.1.8     # 질문/테스트 카드 swipe UI
   percent_indicator: ^4.2.3       # 테스트 진행률 표시
   flutter_animate: ^4.5.0         # 애니메이션 효과
+  share_plus: ^7.2.2
 
   # 그 외 필요하면 share_plus 같은 패키지도 여기에 추가 가능
   # share_plus: ^7.2.0

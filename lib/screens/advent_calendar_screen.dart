@@ -2,7 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:confetti/confetti.dart';
+
 import '../models/advent_mission.dart';
+import '../widgets/snowfall_widget.dart';
 import '../services/advent_service.dart';
 
 class AdventCalendarScreen extends StatefulWidget {
@@ -16,21 +18,23 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
   final AdventService _adventService = AdventService();
   late List<AdventMission> _missions;
   bool _isLoading = true;
+
   late ConfettiController _confettiController;
+
   final DateTime _today = DateTime.now();
   final DateTime _decemberFirst = DateTime(_getValidYear(), 12, 1);
   final DateTime _decemberLast = DateTime(_getValidYear(), 12, 31);
 
   static int _getValidYear() {
     final now = DateTime.now();
-    // 12월이 아니면 작년 12월 캘린더를 보여주거나, 올해 12월을 준비
-    return now.month == 12 ? now.year : DateTime.now().year;
+    return now.year;
   }
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 1));
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 3));
     _loadMissions();
   }
 
@@ -51,7 +55,6 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     if (selectedDay.month != 12 || selectedDay.day > 24) return;
 
-    // 오늘 이전 날짜이거나 오늘 날짜인 경우에만 미션 확인 가능
     if (selectedDay.isAfter(_today.add(const Duration(days: 1)))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -71,13 +74,20 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('🎄 ${mission.day}일차 미션', style: const TextStyle(fontWeight: FontWeight.bold)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '🎄 ${mission.day}일차 미션',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 10),
-            Text(mission.task, style: const TextStyle(fontSize: 18), textAlign: TextAlign.center),
+            Text(
+              mission.task,
+              style: const TextStyle(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
             if (mission.isCompleted)
               const Row(
@@ -85,13 +95,19 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.green),
                   SizedBox(width: 8),
-                  Text('미션 완료!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  Text(
+                    '미션 완료!',
+                    style: TextStyle(
+                        color: Colors.green, fontWeight: FontWeight.bold),
+                  ),
                 ],
               )
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('닫기')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('닫기')),
           if (!mission.isCompleted)
             ElevatedButton(
               onPressed: () async {
@@ -102,8 +118,12 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
                 Navigator.pop(context);
                 _confettiController.play();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF463F)),
-              child: const Text('미션 완료!', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF463F)),
+              child: const Text(
+                '미션 완료!',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
         ],
       ),
@@ -113,56 +133,81 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('🎄 어드벤트 캘린더'),
+        title: const Text(
+          '🎄 어드벤트 캘린더',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
-        actions: [
-          // 테스트용 리셋 버튼
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () async {
-              await _adventService.resetAllMissions();
-              _loadMissions();
-            },
-          ),
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: Stack(
         children: [
+          // Background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFB71C1C), Color(0xFF6D001A)],
+              ),
+            ),
+          ),
+
+          const SnowfallWidget(numberOfSnowflakes: 50),
+
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.only(top: 100, left: 8, right: 8),
               child: TableCalendar(
                 locale: 'ko_KR',
                 focusedDay: _decemberFirst,
                 firstDay: _decemberFirst,
                 lastDay: _decemberLast,
                 headerStyle: const HeaderStyle(
+                  leftChevronVisible: false,
+                  rightChevronVisible: false,
                   formatButtonVisible: false,
                   titleCentered: true,
-                  titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  titleTextStyle: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+                daysOfWeekStyle: const DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(color: Colors.white70),
+                  weekendStyle: TextStyle(color: Colors.white),
                 ),
                 calendarBuilders: CalendarBuilders(
                   defaultBuilder: (context, day, focusedDay) {
                     if (day.month != 12 || day.day > 24) return null;
-
-                    final mission = _missions.firstWhere((m) => m.day == day.day);
+                    final mission =
+                        _missions.firstWhere((m) => m.day == day.day);
                     final isLocked = day.isAfter(_today);
-
-                    return _buildCalendarCell(day.day, mission.isCompleted, isLocked);
+                    return _buildCalendarCell(
+                        day.day, mission.isCompleted, isLocked);
                   },
                   todayBuilder: (context, day, focusedDay) {
-                    if (day.month != 12 || day.day > 24) return null;
-                    final mission = _missions.firstWhere((m) => m.day == day.day);
-                    return _buildCalendarCell(day.day, mission.isCompleted, false, isToday: true);
+                    final mission =
+                        _missions.firstWhere((m) => m.day == day.day);
+                    return _buildCalendarCell(
+                        day.day, mission.isCompleted, false,
+                        isToday: true);
                   },
-                  outsideBuilder: (context, day, focusedDay) => const SizedBox(),
+                  outsideBuilder: (_, __, ___) =>
+                      const SizedBox.shrink(),
+                  disabledBuilder: (_, __, ___) =>
+                      const SizedBox.shrink(),
                 ),
                 onDaySelected: _onDaySelected,
               ),
             ),
+
+          // ⭐ Star Confetti
           Align(
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
@@ -170,12 +215,19 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
               colors: const [
-                Colors.green, Colors.red, Colors.yellow, Colors.blue, Colors.white
+                Colors.red,
+                Colors.white,
+                Colors.green,
+                Color(0xFFFBCB0A),
+                Colors.lightBlue,
               ],
-              particleDrag: 0.05,
+              numberOfParticles: 30,
               emissionFrequency: 0.05,
-              numberOfParticles: 20,
-              gravity: 0.05,
+              maxBlastForce: 25,
+              minBlastForce: 5,
+              gravity: 0.1,
+              particleDrag: 0.05,
+              createParticlePath: (size) => _drawStar(size),
             ),
           ),
         ],
@@ -183,46 +235,71 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
     );
   }
 
-  Widget _buildCalendarCell(int day, bool isCompleted, bool isLocked, {bool isToday = false}) {
-    final List<String> icons = ['🎁', '❄️', '🔔', '⭐', '🧦', '🕯️'];
-    final randomIcon = icons[day % icons.length];
+  // ⭐ Star Path
+  Path _drawStar(Size size) {
+    double degToRad(double deg) => deg * (pi / 180.0);
 
-    return Container(
-      margin: const EdgeInsets.all(4),
+    const points = 5;
+    final half = size.width / 2;
+    final outer = half;
+    final inner = half / 2.5;
+    final step = degToRad(360 / points);
+    final halfStep = step / 2;
+
+    final path = Path();
+    path.moveTo(size.width, half);
+
+    for (double angle = 0; angle < degToRad(360); angle += step) {
+      path.lineTo(
+        half + outer * cos(angle),
+        half + outer * sin(angle),
+      );
+      path.lineTo(
+        half + inner * cos(angle + halfStep),
+        half + inner * sin(angle + halfStep),
+      );
+    }
+
+    path.close();
+    return path;
+  }
+
+  Widget _buildCalendarCell(int day, bool isCompleted, bool isLocked,
+      {bool isToday = false}) {
+    final icons = ['🎁', '🎄', '🔔', '⭐', '🧦', '🕯️', '🦌', '🎅'];
+    final icon = icons[day % icons.length];
+
+    Color bg;
+    Widget content;
+
+    if (isLocked) {
+      bg = Colors.black.withOpacity(0.3);
+      content = const Icon(Icons.lock, color: Colors.white54);
+    } else if (isCompleted) {
+      bg = const Color(0xFFFBCB0A);
+      content = const Icon(Icons.star, color: Colors.white, size: 32);
+    } else {
+      bg = const Color(0xFFEF463F);
+      content = Text(icon, style: const TextStyle(fontSize: 28));
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: isLocked
-            ? Colors.grey.shade300
-            : isCompleted
-                ? Colors.green.shade100
-                : Colors.white,
+        color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: isToday ? Border.all(color: const Color(0xFFEF463F), width: 2) : null,
+        border:
+            isToday ? Border.all(color: Colors.yellow, width: 2.5) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(2, 2),
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 6,
+            offset: const Offset(2, 4),
           ),
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (!isCompleted) Text(randomIcon, style: const TextStyle(fontSize: 20)),
-          Text(
-            '$day',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isLocked ? Colors.grey.shade600 : Colors.black87,
-              fontSize: 16,
-            ),
-          ),
-          if (isCompleted)
-            const Text('✅', style: TextStyle(fontSize: 24)),
-          if (isLocked)
-            const Icon(Icons.lock, color: Colors.black54, size: 20),
-        ],
-      ),
+      child: Center(child: content),
     );
   }
 }

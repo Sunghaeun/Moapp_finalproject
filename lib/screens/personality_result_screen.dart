@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:share_plus/share_plus.dart';
 import '../widgets/snowfall_widget.dart'; // 새로 만든 위젯 import
 
 class PersonalityResultScreen extends StatefulWidget {
@@ -22,20 +23,11 @@ class PersonalityResultScreen extends StatefulWidget {
 
 class _PersonalityResultScreenState extends State<PersonalityResultScreen> {
   late ConfettiController _confettiController;
-  bool _isSnowyType = false;
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
-    _isSnowyType = widget.personalityType.contains('❄️');
-
-    // 눈 내리는 타입이 아니면, 화면이 빌드된 후 confetti 효과를 재생합니다.
-    if (!_isSnowyType) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _confettiController.play();
-      });
-    }
   }
 
   @override
@@ -48,26 +40,24 @@ class _PersonalityResultScreenState extends State<PersonalityResultScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       // 눈 내리는 타입일 때 배경을 어둡게 변경
-      backgroundColor:
-          _isSnowyType ? const Color(0xFF012D5C) : Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF012D5C),
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           '🧐 나의 크리스마스 유형 결과', // 제목 변경
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: _isSnowyType ? Colors.white : const Color(0xFF012D5C),
+            color: Colors.white,
           ),
         ),
         // 눈 내리는 타입일 때 AppBar 배경을 투명하게 만들어 자연스럽게 연결
-        backgroundColor: _isSnowyType ? Colors.transparent : Colors.white,
-        foregroundColor: _isSnowyType ? Colors.white : const Color(0xFF012D5C),
-        elevation: _isSnowyType ? 0 : 2,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
         centerTitle: true,
       ),
       body: Stack(
         children: [
-          // 조건부 배경 효과
-          if (_isSnowyType) const SnowfallWidget(),
+          const SnowfallWidget(),
 
           // 메인 콘텐츠
           SingleChildScrollView(
@@ -82,8 +72,12 @@ class _PersonalityResultScreenState extends State<PersonalityResultScreen> {
                     personalityDescription: widget.personalityDescription,
                   ),
                   const SizedBox(height: 32),
-                  _buildRecommendations(widget.christmasTips),
+                  _buildMatchingTypes(widget.personalityType),
                   const SizedBox(height: 32),
+                  _buildRecommendations(widget.christmasTips),
+                  const SizedBox(height: 24),
+                  _buildShareButton(context),
+                  const SizedBox(height: 16),
                   _buildActionButton(context),
                 ],
               ),
@@ -113,7 +107,7 @@ class _PersonalityResultScreenState extends State<PersonalityResultScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         // 눈 내리는 타입일 때 반투명 배경으로 변경
-        color: _isSnowyType ? Colors.white.withOpacity(0.9) : Colors.white,
+        color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -165,16 +159,80 @@ class _PersonalityResultScreenState extends State<PersonalityResultScreen> {
     );
   }
 
+  // '찰떡궁합' 유형을 보여주는 위젯
+  Widget _buildMatchingTypes(String currentType) {
+    // 각 유형에 대한 정보 (아이콘, 이름)
+    const typeDetails = {
+      '집콕파': {'icon': '❄️', 'name': '눈처럼 포근한 집콕파'},
+      '모임파': {'icon': '🔥', 'name': '모닥불처럼 따뜻한 모임파'},
+      '산타파': {'icon': '🎁', 'name': '선물에 진심인 산타파'},
+      '로맨틱파': {'icon': '💖', 'name': '낭만을 즐기는 로맨틱파'},
+    };
+
+    // 유형별 궁합 정보
+    const matchingPairs = {
+      '집콕파': '로맨틱파',
+      '모임파': '산타파',
+      '산타파': '모임파',
+      '로맨틱파': '집콕파',
+    };
+
+    String? matchingTypeName;
+    for (var key in matchingPairs.keys) {
+      if (currentType.contains(key)) {
+        matchingTypeName = matchingPairs[key];
+        break;
+      }
+    }
+
+    if (matchingTypeName == null || !typeDetails.containsKey(matchingTypeName)) {
+      return const SizedBox.shrink(); // 매칭되는 타입이 없으면 아무것도 표시하지 않음
+    }
+
+    final matchingType = typeDetails[matchingTypeName]!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '🤝 찰떡궁합 크리스마스 유형',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(matchingType['icon']!, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 12),
+              Text(matchingType['name']!,
+                  style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildRecommendations(List<String> gifts) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           '🎄 이런 크리스마스를 보내보세요!', // 텍스트 변경
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: _isSnowyType ? Colors.white : const Color(0xFF012D5C),
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 16),
@@ -197,6 +255,27 @@ class _PersonalityResultScreenState extends State<PersonalityResultScreen> {
               .toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildShareButton(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          // share_plus를 사용하여 텍스트만 공유. 'text:' 파라미터를 제거합니다.
+          Share.share('나의 크리스마스 유형은 "${widget.personalityTitle}"! 🎄\n당신의 유형도 알아보세요!');
+        },
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Colors.white, width: 2),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+          ),
+        ),
+        icon: const Icon(Icons.share_outlined),
+        label: const Text('결과 공유하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
