@@ -1,74 +1,102 @@
 // lib/services/cart_service.dart
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/cart_item.dart';
 import '../models/gift_model.dart';
 
 class CartService {
-  static const String _cartKey = 'shopping_cart';
-  
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  String get _userId => _auth.currentUser?.uid ?? 'guest';
+
+  // 장바구니 컬렉션 참조
+  CollectionReference get _cartCollection => 
+      _firestore.collection('carts').doc(_userId).collection('items');
+
   // 장바구니에 추가
-  Future<void> addToCart(Gift gift) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cartItems = await getCartItems();
-    
-    // 이미 있는지 확인
-    final exists = cartItems.any((item) => item.id == gift.id);
-    if (!exists) {
-      cartItems.add(gift);
-      await _saveCart(cartItems);
+  Future<bool> addToCart(Gift gift) async {
+    try {
+      // id를 productId로 사용
+      final existingItem = await _cartCollection
+          .where('productId', isEqualTo: gift.id)
+          .get();
+
+      if (existingItem.docs.isNotEmpty) {
+        return false; // 이미 장바구니에 있음
+      }
+
+      final cartItem = CartItem(
+        id: '',
+        userId: _userId,
+        productId: gift.id,  // id 사용
+        title: gift.name,    // name 사용
+        imageUrl: gift.imageUrl,
+        price: gift.price,
+        link: gift.purchaseLink,  // purchaseLink 사용
+        addedAt: DateTime.now(),
+      );
+
+      await _cartCollection.add(cartItem.toMap());
+      return true;
+    } catch (e) {
+      print('장바구니 추가 오류: $e');
+      return false;
     }
   }
-  
-  // 장바구니에서 제거
-  Future<void> removeFromCart(String giftId) async {
-    final cartItems = await getCartItems();
-    cartItems.removeWhere((item) => item.id == giftId);
-    await _saveCart(cartItems);
+
+  // 장바구니 아이템 삭제
+  Future<void> removeFromCart(String itemId) async {
+    try {
+      await _cartCollection.doc(itemId).delete();
+    } catch (e) {
+      print('장바구니 삭제 오류: $e');
+    }
   }
-  
+
+  // 장바구니 전체 조회
+  Stream<List<CartItem>> getCartItems() {
+    return _cartCollection
+        .orderBy('addedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => CartItem.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+            .toList());
+  }
+
+  // 장바구니 개수 조회
+  Future<int> getCartCount() async {
+    try {
+      final snapshot = await _cartCollection.get();
+      return snapshot.docs.length;
+    } catch (e) {
+      print('장바구니 개수 조회 오류: $e');
+      return 0;
+    }
+  }
+
   // 장바구니 비우기
   Future<void> clearCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cartKey);
-  }
-  
-  // 장바구니 아이템 가져오기
-  Future<List<Gift>> getCartItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_cartKey);
-    
-    if (jsonString == null) return [];
-    
-    final jsonList = jsonDecode(jsonString) as List;
-    return jsonList.map((json) => Gift.fromJson(json)).toList();
-  }
-  
-  // 장바구니에 있는지 확인
-  Future<bool> isInCart(String giftId) async {
-    final cartItems = await getCartItems();
-    return cartItems.any((item) => item.id == giftId);
-  }
-  
-  // 장바구니 아이템 개수
-  Future<int> getCartCount() async {
-    final cartItems = await getCartItems();
-    return cartItems.length;
-  }
-  
-  // 장바구니 총 금액
-  Future<int> getTotalPrice() async {
-    final cartItems = await getCartItems();
-    int total = 0;
-    for (var item in cartItems) {
-      total += item.price;
+    try {
+      final snapshot = await _cartCollection.get();
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    } catch (e) {
+      print('장바구니 비우기 오류: $e');
     }
-    return total;
   }
-  
-  // 내부: 장바구니 저장
-  Future<void> _saveCart(List<Gift> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = items.map((gift) => gift.toJson()).toList();
-    await prefs.setString(_cartKey, jsonEncode(jsonList));
+
+  // 장바구니에 있는지 확인
+  Future<bool> isInCart(String productId) async {
+    try {
+      final snapshot = await _cartCollection
+          .where('productId', isEqualTo: productId)
+          .get();
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('장바구니 확인 오류: $e');
+      return false;
+    }
   }
 }
