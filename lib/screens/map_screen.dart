@@ -153,7 +153,7 @@ class _MapScreenState extends State<MapScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            Text( 
               store.name,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
