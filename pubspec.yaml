@@ -9,31 +9,35 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    
+
+  cupertino_icons: ^1.0.2  # 기본 아이콘
+
+  # ML / Camera    
   google_mlkit_face_detection: ^0.13.1
   image_picker: ^1.0.7
   camera: ^0.10.5
-  
+
   # HTTP & API
   http: ^1.1.0
   dio: ^5.4.0
-  
+
   # JSON
   json_annotation: ^4.8.1
-  
+
   # State Management
+
   provider: ^6.1.5+1
   
   # UI Components
   flutter_markdown: ^0.6.18
   lottie: ^3.0.0
   shimmer: ^3.0.0
-  
+
   # Storage
   shared_preferences: ^2.2.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  
+
   # Utilities
   flutter_dotenv: ^5.1.0
   url_launcher: ^6.2.2
@@ -41,6 +45,17 @@ dependencies:
   google_maps_flutter: ^2.14.0
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
+  table_calendar: ^3.0.9
+  confetti: ^0.8.0
+
+  # ⭐ 추가한 크리스마스 테스트용 패키지들
+  flutter_swiper_view: ^1.1.8     # 질문/테스트 카드 swipe UI
+  percent_indicator: ^4.2.3       # 테스트 진행률 표시
+  flutter_animate: ^4.5.0         # 애니메이션 효과
+  share_plus: ^7.2.2
+
+  # 그 외 필요하면 share_plus 같은 패키지도 여기에 추가 가능
+  # share_plus: ^7.2.0
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.1.0
@@ -56,7 +71,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
-    # - assets/animations/
+    # Advent calendar missions
+    - assets/data/missions.json
+
+    # Environment file
     - .env
+
+    # 필요하면 이미지/애니메이션 폴더도 추가 가능
+    # - assets/images/
+    # - assets/animations/

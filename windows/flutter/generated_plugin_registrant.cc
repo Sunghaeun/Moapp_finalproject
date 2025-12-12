@@ -10,6 +10,7 @@
 #include <cloud_firestore/cloud_firestore_plugin_c_api.h>
 #include <desktop_webview_auth/desktop_webview_auth_plugin.h>
 #include <file_selector_windows/file_selector_windows.h>
+#include <share_plus/share_plus_windows_plugin_c_api.h>
 #include <firebase_auth/firebase_auth_plugin_c_api.h>
 #include <firebase_core/firebase_core_plugin_c_api.h>
 #include <url_launcher_windows/url_launcher_windows.h>
@@ -23,6 +24,9 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("DesktopWebviewAuthPlugin"));
   FileSelectorWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FileSelectorWindows"));
+  SharePlusWindowsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("SharePlusWindowsPluginCApi"));
+
   FirebaseAuthPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FirebaseAuthPluginCApi"));
   FirebaseCorePluginCApiRegisterWithRegistrar(

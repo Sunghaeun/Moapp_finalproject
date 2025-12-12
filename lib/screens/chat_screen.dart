@@ -1,4 +1,4 @@
-// lib/screens/improved_chat_screen.dart
+// lib/screens/chat_screen.dart
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import '../models/gift_model.dart';
@@ -9,7 +9,9 @@ import '../widgets/typing_indicator.dart';
 import '../widgets/gift_card.dart';
 
 class ImprovedChatScreen extends StatefulWidget {
-  const ImprovedChatScreen({super.key});
+  final String? initialPrompt;
+
+  const ImprovedChatScreen({super.key, this.initialPrompt});
 
   @override
   State<ImprovedChatScreen> createState() => _ImprovedChatScreenState();
@@ -78,7 +80,11 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
   @override
   void initState() {
     super.initState();
-    _startConversation();
+    if (widget.initialPrompt != null && widget.initialPrompt!.isNotEmpty) {
+      _startWithPrompt(widget.initialPrompt!);
+    } else {
+      _startConversation();
+    }
   }
 
   @override
@@ -86,6 +92,22 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _startWithPrompt(String prompt) {
+    // 1. 시스템 시작 메시지 추가
+    _addMessage(
+      ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: '안녕하세요! 크리스마시 AI입니다. 무엇을 도와드릴까요?',
+        type: MessageType.assistant,
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    // 2. 전달받은 프롬프트로 바로 추천 시작
+    _messageController.text = prompt;
+    _handleTextMessage();
   }
 
   void _startConversation() {
@@ -733,13 +755,12 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
               child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + 1, // 추가 항목(버튼 또는 타이핑)을 위한 공간
+              itemCount: _messages.length + 1,
               itemBuilder: (context, index) {
                 if (index < _messages.length) {
                   return ChatBubble(message: _messages[index]);
                 }
 
-                // 마지막 항목
                 if (_isTyping) {
                   return Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -759,10 +780,8 @@ class _ImprovedChatScreenState extends State<ImprovedChatScreen> {
                 }
                 return _buildFeedbackButtons();
               },
-            
-            
             ),
-      ),
+          ),
           
           Container(
             decoration: BoxDecoration(
