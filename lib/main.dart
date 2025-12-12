@@ -10,10 +10,16 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'screens/home_screen.dart';
 import 'services/gift_database_service.dart';
 import 'models/gift_model.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   // 환경 변수 로드
   await dotenv.load(fileName: ".env");
 
