@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'advent_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collectionPath = 'users';
+  final AdventService _adventService = AdventService();
 
   /// 사용자가 처음 로그인할 때 Firestore에 사용자 정보를 저장합니다.
   /// 문서가 이미 존재하면 마지막 로그인 시간만 업데이트합니다.
@@ -23,7 +25,11 @@ class UserService {
     if (!doc.exists) {
       // 새 사용자일 경우, 생성 시간 추가
       userData['createdAt'] = FieldValue.serverTimestamp();
-      await userRef.set(userData);
+      // 트랜잭션 또는 배치 쓰기를 사용하여 사용자 정보와 어드벤트 미션을 함께 생성
+      await _firestore.runTransaction((transaction) async {
+        transaction.set(userRef, userData);
+        await _adventService.initializeMissionsForUser(user.uid, transaction: transaction);
+      });
       print('새로운 사용자 정보를 저장했습니다: ${user.uid}');
     } else {
       // 기존 사용자일 경우, 마지막 로그인 시간만 업데이트

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:confetti/confetti.dart';
 
@@ -16,6 +17,7 @@ class AdventCalendarScreen extends StatefulWidget {
 
 class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
   final AdventService _adventService = AdventService();
+  final String? _uid = FirebaseAuth.instance.currentUser?.uid;
   late List<AdventMission> _missions;
   bool _isLoading = true;
 
@@ -45,11 +47,30 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
   }
 
   Future<void> _loadMissions() async {
-    final missions = await _adventService.getMissions();
-    setState(() {
-      _missions = missions;
-      _isLoading = false;
-    });
+    if (_uid == null) {
+      // 로그인되지 않은 사용자에 대한 처리
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('로그인이 필요합니다.'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    try {
+      final missions = await _adventService.getMissions();
+      setState(() {
+        _missions = missions;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('미션 로딩 실패: $e');
+      setState(() => _isLoading = false);
+      // 에러 발생 시 사용자에게 알림
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('미션을 불러오는 데 실패했습니다: $e'),
+        backgroundColor: Colors.red,
+      ));
+    }
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {

@@ -1,54 +1,80 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/advent_mission.dart';
 
 class AdventService {
-  static const String _missionCompletedKeyPrefix = 'mission_completed_';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 모든 미션 데이터를 불러오고 완료 상태를 적용
-  Future<List<AdventMission>> getMissions() async {
-    // 1. JSON 파일에서 미션 목록 로드
+  String? get _uid => _auth.currentUser?.uid;
+
+  /// 새 사용자를 위해 Firestore에 초기 미션 데이터를 생성합니다.
+  /// 트랜잭션의 일부로 실행됩니다.
+  Future<void> initializeMissionsForUser(String uid,
+      {required Transaction transaction}) async {
     final String response = await rootBundle.loadString('assets/data/missions.json');
     final data = await json.decode(response);
     final List<dynamic> missionListJson = data['missions'];
 
-    List<AdventMission> missions = missionListJson
-        .map((json) => AdventMission.fromJson(json))
-        .toList();
+    final userMissionsRef =
+        _firestore.collection('users').doc(uid).collection('advent_missions');
 
-    // 2. SharedPreferences에서 각 미션의 완료 상태 로드
-    final prefs = await SharedPreferences.getInstance();
-    for (var mission in missions) {
-      mission.isCompleted = prefs.getBool(_getMissionKey(mission.day)) ?? false;
+    for (var missionJson in missionListJson) {
+      final mission = AdventMission.fromJson(missionJson);
+      final missionDocRef = userMissionsRef.doc(mission.day.toString());
+      transaction.set(missionDocRef, mission.toJson());
     }
+  }
+
+  // Firestore에서 사용자의 모든 미션 데이터를 불러옵니다.
+  Future<List<AdventMission>> getMissions() async {
+    if (_uid == null) throw Exception('사용자가 로그인되어 있지 않습니다.');
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('advent_missions')
+        .orderBy('day')
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      // 데이터가 없는 경우 (매우 드문 경우), 초기화를 시도할 수 있습니다.
+      // 여기서는 빈 리스트를 반환하거나 에러 처리를 할 수 있습니다.
+      print('경고: Firestore에 어드벤트 미션 데이터가 없습니다. uid: $_uid');
+      return [];
+    }
+
+    final missions = snapshot.docs
+        .map((doc) => AdventMission.fromJson(doc.data()))
+        .toList();
 
     return missions;
   }
 
-  // 특정 날짜의 미션을 완료로 표시
+  // Firestore에서 특정 날짜의 미션을 완료로 표시합니다.
   Future<void> completeMission(int day) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_getMissionKey(day), true);
+    if (_uid == null) throw Exception('사용자가 로그인되어 있지 않습니다.');
+
+    await _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('advent_missions')
+        .doc(day.toString())
+        .update({'isCompleted': true});
   }
 
-  // 완료된 미션 개수 가져오기
+  // Firestore에서 완료된 미션 개수를 가져옵니다.
   Future<int> getCompletedMissionCount() async {
-    final missions = await getMissions();
-    return missions.where((m) => m.isCompleted).length;
-  }
+    if (_uid == null) return 0;
 
-  // 모든 미션 진행도 리셋 (테스트용)
-  Future<void> resetAllMissions() async {
-    final prefs = await SharedPreferences.getInstance();
-    final missions = await getMissions();
-    for (var mission in missions) {
-      await prefs.remove(_getMissionKey(mission.day));
-    }
-  }
-
-  // SharedPreferences 키 생성
-  String _getMissionKey(int day) {
-    return '$_missionCompletedKeyPrefix$day';
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('advent_missions')
+        .where('isCompleted', isEqualTo: true)
+        .get();
+    return snapshot.docs.length;
   }
 }
