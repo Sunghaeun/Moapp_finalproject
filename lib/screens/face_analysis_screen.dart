@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/openai_service.dart';
 import '../services/naver_shopping_service.dart';
+import '../services/face_analysis_service.dart'; // ML Kit 서비스 추가
 import '../models/gift_model.dart';
 import '../widgets/gift_card.dart';
 
@@ -17,16 +18,19 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
   final _picker = ImagePicker();
   final OpenAIService _aiService = OpenAIService();
   final NaverShoppingService _naverService = NaverShoppingService();
+  final FaceAnalysisService _faceAnalysisService = FaceAnalysisService(); // ML Kit 서비스 초기화
 
   XFile? _selectedImage;
-  String? _analysisResultText;
+  String? _mlKitAnalysisSummary; // ML Kit 분석 요약
+  String? _openAIAnalysisResultText; // OpenAI 최종 분석 결과
   List<Gift> _recommendedGifts = [];
-  bool _isAnalyzing = false;
+  bool _isAnalyzingMLKit = false; // ML Kit 분석 상태
   bool _isLoadingGifts = false;
   int _recommendationAttempt = 0; // 추천 시도 횟수
 
   @override
   void dispose() {
+    _faceAnalysisService.dispose(); // 서비스 리소스 정리
     super.dispose();
   }
 
@@ -41,28 +45,46 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
 
     setState(() {
       _selectedImage = image;
-      _analysisResultText = null;
+      _mlKitAnalysisSummary = null;
+      _openAIAnalysisResultText = null;
       _recommendedGifts = [];
       _recommendationAttempt = 0;
+      _isAnalyzingMLKit = true; // ML Kit 분석 시작
     });
 
-    _isAnalyzing = false; // ML Kit 분석이 없어졌으므로 바로 선물 추천으로
-
-    // 선물 추천 받기
-    _getGiftRecommendations();
+    // 1단계: ML Kit 얼굴 분석
+    try {
+      final mlKitResult = await _faceAnalysisService.analyzeFace(image.path);
+      setState(() {
+        _mlKitAnalysisSummary = mlKitResult.getSummary();
+        _isAnalyzingMLKit = false;
+      });
+      // 2단계: OpenAI 선물 추천
+      _getGiftRecommendations(mlKitResult.toPromptText());
+    } on FaceAnalysisException catch (e) {
+      setState(() {
+        _isAnalyzingMLKit = false;
+      });
+      _showErrorDialog('얼굴 분석 실패', e.message);
+    } catch (e) {
+      setState(() {
+        _isAnalyzingMLKit = false;
+      });
+      _showErrorDialog('오류', '알 수 없는 오류가 발생했습니다: $e');
+    }
   }
 
-  Future<void> _getGiftRecommendations() async {
+  Future<void> _getGiftRecommendations([String? mlKitAnalysisText]) async {
     if (_selectedImage == null) return;
 
     setState(() => _isLoadingGifts = true);
     _recommendationAttempt++;
-
     try {
       // AI에게 이미지 분석 및 추천 요청
       final response = await _aiService.getRecommendationFromImage(
         imagePath: _selectedImage!.path,
         attemptCount: _recommendationAttempt,
+        mlKitAnalysisText: mlKitAnalysisText, // ML Kit 분석 결과 전달
       );
 
       print('=== AI 응답 ===');
@@ -79,7 +101,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
       }
 
       setState(() {
-        _analysisResultText = response.analysis;
+        _openAIAnalysisResultText = response.analysis;
         _recommendedGifts = giftResults;
         _isLoadingGifts = false;
       });
@@ -116,7 +138,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(context).pop();
               _getGiftRecommendations(); // 재시도
             },
             child: const Text('다시 추천받기'),
@@ -144,7 +166,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('확인'),
           ),
         ],
@@ -163,7 +185,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          if (_analysisResultText != null)
+          if (_openAIAnalysisResultText != null)
             IconButton(
               icon: const Icon(Icons.refresh),
               tooltip: '다른 선물 추천받기',
@@ -175,7 +197,8 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
         child: Column(
           children: [
             _buildImageSection(),
-            if (_analysisResultText != null) _buildResultSection(),
+            if (_isAnalyzingMLKit || _mlKitAnalysisSummary != null) _buildMLKitResultSection(),
+            if (_openAIAnalysisResultText != null) _buildOpenAIResultSection(),
             if (_isLoadingGifts) _buildLoadingGiftsSection(),
             if (_recommendedGifts.isNotEmpty && !_isLoadingGifts) _buildGiftSection(),
           ],
@@ -276,7 +299,51 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
     );
   }
 
-  Widget _buildResultSection() {
+  Widget _buildMLKitResultSection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blue.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          if (_isAnalyzingMLKit) ...[
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                '1단계: 얼굴 특징 분석 중...',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+              ),
+            ),
+          ] else ...[
+            Icon(Icons.face_retouching_natural, color: Theme.of(context).colorScheme.primary, size: 28),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('1단계: 얼굴 분석 완료', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    _mlKitAnalysisSummary ?? '분석 결과 없음',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  Widget _buildOpenAIResultSection() {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -307,7 +374,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'AI 분석 결과',
+                  '2단계: AI 선물 추천',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -315,7 +382,7 @@ class _FaceAnalysisScreenState extends State<FaceAnalysisScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            _analysisResultText ?? '분석 결과가 없습니다.',
+            _openAIAnalysisResultText ?? '분석 결과가 없습니다.',
             style: TextStyle(
               fontSize: 15,
               height: 1.6,

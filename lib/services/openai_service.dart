@@ -17,6 +17,7 @@ class OpenAIService {
   Future<RecommendationResponse> getRecommendationFromImage({
     required String imagePath,
     required int attemptCount,
+    String? mlKitAnalysisText, // ML Kit 분석 결과 추가
   }) async {
     try {
       print('=== OpenAI Vision API 요청 시작 ===');
@@ -29,13 +30,19 @@ class OpenAIService {
 
       // 2. 시스템 프롬프트 및 사용자 프롬프트 구성
       final systemPrompt = _buildVisionSystemPrompt();
-      final userPrompt = '''
-이 사람의 얼굴을 분석해서 선물을 추천해줘.
+      
+      // ML Kit 분석 결과를 프롬프트에 포함
+      final mlKitPromptPart = mlKitAnalysisText != null && mlKitAnalysisText.isNotEmpty
+          ? '$mlKitAnalysisText\n\n위 ML Kit의 1차 분석 결과를 참고하고, 아래 사진을 직접 분석해서 최종 선물을 추천해줘.'
+          : '이 사람의 얼굴을 분석해서 선물을 추천해줘.';
+
+      final userPrompt = '''$mlKitPromptPart
 
 # 중요
 - 현재 ${attemptCount}번째 추천이야.
 - 이전에 추천했던 것과는 완전히 다른 카테고리의 선물을 추천해줘.
 - 구체적인 브랜드와 제품명을 사용해서 추천해줘.
+- ML Kit 분석이 틀렸다고 생각되면, 너의 판단을 우선시해줘.
 ''';
 
       final messages = [

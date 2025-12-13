@@ -64,6 +64,15 @@ class CartService {
             .toList());
   }
 
+  // 장바구니 전체 조회 (1회성)
+  Future<List<CartItem>> getCartItemsOnce() async {
+    final snapshot = await _cartCollection
+        .orderBy('addedAt', descending: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => CartItem.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+  }
   // 장바구니 개수 조회
   Future<int> getCartCount() async {
     try {
