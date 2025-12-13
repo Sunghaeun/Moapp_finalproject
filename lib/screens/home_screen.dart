@@ -55,9 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = _authService.currentUser;
-    final isGuest = user?.isAnonymous ?? false;
-
     return Scaffold(
       appBar: _buildAppBar(),
       body: _buildBody(),
@@ -66,8 +63,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ================= AppBar =================
   PreferredSizeWidget _buildAppBar() {
+    final user = _authService.currentUser;
+    final isGuest = user?.isAnonymous ?? false;
+
     return AppBar(
-      leading: const SizedBox(width: 56), // actions 영역과 동일한 너비로 중앙 정렬
+      leading: IconButton(
+        icon: const Icon(Icons.logout),
+        onPressed: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('로그아웃'),
+              content: const Text('로그아웃 하시겠습니까?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('취소'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('로그아웃'),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm == true) {
+            await _authService.signOut();
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            }
+          }
+        },
+      ),
       centerTitle: true,
       title: Text(
         'Chrismassy!',
@@ -76,93 +107,57 @@ class _HomeScreenState extends State<HomeScreen> {
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.onBackground,
         ),
-        backgroundColor: const Color(0xFFFFFEFA),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.logout, color: Color(0xFF012D5C)),
-          onPressed: () async {
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('로그아웃'),
-                content: const Text('로그아웃 하시겠습니까?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('취소'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('로그아웃'),
-                  ),
-                ],
-              ),
-            );
-
-            if (confirm == true) {
-              await _authService.signOut();
-              if (mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              }
-            }
-          },
-        ),
-        actions: [
-          if (isGuest)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Chip(
-                label: const Text('게스트', style: TextStyle(fontSize: 12)),
-                backgroundColor: Colors.grey.shade300,
-              ),
+      ),
+      actions: [
+        if (isGuest)
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Chip(
+              label: const Text('게스트', style: TextStyle(fontSize: 12)),
+              backgroundColor: Colors.grey.shade200,
+              padding: EdgeInsets.zero,
             ),
-          Stack(
-
-            children: [
-              IconButton(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CartScreen()),
-                  );
-                  _updateCounts();
-                },
-                icon: Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              if (_cartCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Center(
-                      child: Text(
-                        '$_cartCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+          ),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CartScreen()),
+                );
+                _updateCounts();
+              },
+              icon: const Icon(Icons.shopping_cart_outlined),
+            ),
+            if (_cartCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: Center(
+                    child: Text(
+                      '$_cartCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
