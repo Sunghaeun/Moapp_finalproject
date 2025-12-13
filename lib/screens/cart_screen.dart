@@ -1,18 +1,11 @@
 // lib/screens/cart_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/cart_item.dart';
-import '../services/cart_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../providers/cart_provider.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends StatelessWidget {
   const CartScreen({Key? key}) : super(key: key);
-
-  @override
-  State<CartScreen> createState() => _CartScreenState();
-}
-
-class _CartScreenState extends State<CartScreen> {
-  final CartService _cartService = CartService();
 
   @override
   Widget build(BuildContext context) {
@@ -23,58 +16,75 @@ class _CartScreenState extends State<CartScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('장바구니 비우기'),
-                  content: const Text('장바구니를 모두 비우시겠습니까?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('취소'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('비우기'),
-                    ),
-                  ],
-                ),
-              );
+          Consumer<CartProvider>(
+            builder: (context, cartProvider, child) {
+              return IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: cartProvider.isLoading
+                    ? null
+                    : () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('장바구니 비우기'),
+                            content: const Text('장바구니를 모두 비우시겠습니까?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('취소'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('비우기'),
+                              ),
+                            ],
+                          ),
+                        );
 
-              if (confirm == true) {
-                await _cartService.clearCart();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('장바구니가 비워졌습니다')),
-                  );
-                }
-              }
+                        if (confirm == true) {
+                          await cartProvider.clearCart();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('장바구니가 비워졌습니다')),
+                            );
+                          }
+                        }
+                      },
+              );
             },
           ),
         ],
       ),
-      body: StreamBuilder<List<CartItem>>(
-        stream: _cartService.getCartItems(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Consumer<CartProvider>(
+        builder: (context, cartProvider, child) {
+          if (cartProvider.isLoading && cartProvider.items.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
-            return const Center(child: Text('오류가 발생했습니다'));
+          if (cartProvider.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    '오류가 발생했습니다: ${cartProvider.error}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            );
           }
 
-          final items = snapshot.data ?? [];
+          final items = cartProvider.items;
 
           if (items.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_cart_outlined, 
+                  Icon(Icons.shopping_cart_outlined,
                       size: 80, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
@@ -86,11 +96,6 @@ class _CartScreenState extends State<CartScreen> {
             );
           }
 
-          final totalPrice = items.fold<int>(
-            0, 
-            (sum, item) => sum + item.price,
-          );
-
           return Column(
             children: [
               Expanded(
@@ -99,11 +104,11 @@ class _CartScreenState extends State<CartScreen> {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    return _buildCartItem(item);
+                    return _buildCartItem(context, item, cartProvider);
                   },
                 ),
               ),
-              _buildBottomBar(totalPrice, items.length),
+              _buildBottomBar(context, cartProvider.totalPrice, items.length),
             ],
           );
         },
@@ -111,7 +116,8 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildCartItem(CartItem item) {
+  Widget _buildCartItem(
+      BuildContext context, CartItem item, CartProvider cartProvider) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -162,15 +168,23 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () async {
-                await _cartService.removeFromCart(item.id);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('삭제되었습니다')),
-                  );
-                }
-              },
+              icon: cartProvider.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: cartProvider.isLoading
+                  ? null
+                  : () async {
+                      await cartProvider.removeFromCart(item.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('삭제되었습니다')),
+                        );
+                      }
+                    },
             ),
           ],
         ),
@@ -178,7 +192,7 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildBottomBar(int totalPrice, int itemCount) {
+  Widget _buildBottomBar(BuildContext context, int totalPrice, int itemCount) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

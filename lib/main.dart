@@ -7,12 +7,10 @@ import 'package:provider/provider.dart';
 // 날짜 포맷 로케일 초기화를 위한 import
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
-import 'services/gift_database_service.dart';
-import 'models/gift_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'providers/cart_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,9 +33,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '선물의 정석',
-      debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
+      child: MaterialApp(
+        title: '선물의 정석',
+        debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -126,6 +128,7 @@ class MyApp extends StatelessWidget {
       ),
 
       home: const LoginScreen(), // 로그인 화면을 첫 화면으로
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:lottie/lottie.dart';
 
 import 'chat_screen.dart';
@@ -8,7 +9,7 @@ import 'personality_test_screen.dart';
 import 'cart_screen.dart';
 import 'advent_calendar_screen.dart';
 
-import '../services/cart_service.dart';
+import '../providers/cart_provider.dart';
 import '../services/advent_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -22,10 +23,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
-  final CartService _cartService = CartService();
   final AdventService _adventService = AdventService();
 
-  int _cartCount = 0;
   int _adventProgress = 0;
 
   @override
@@ -40,16 +39,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateCounts() async {
-    final results = await Future.wait([
-      _cartService.getCartCount(),
-      _adventService.getCompletedMissionCount(),
-    ]);
+    final adventProgress = await _adventService.getCompletedMissionCount();
 
     if (!mounted) return;
 
     setState(() {
-      _cartCount = results[0];
-      _adventProgress = results[1];
+      _adventProgress = adventProgress;
     });
   }
 
@@ -118,44 +113,48 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: EdgeInsets.zero,
             ),
           ),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            IconButton(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CartScreen()),
-                );
-                _updateCounts();
-              },
-              icon: const Icon(Icons.shopping_cart_outlined),
-            ),
-            if (_cartCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Center(
-                    child: Text(
-                      '$_cartCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+        Consumer<CartProvider>(
+          builder: (context, cartProvider, child) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CartScreen()),
+                    );
+                    _updateCounts();
+                  },
+                  icon: const Icon(Icons.shopping_cart_outlined),
+                ),
+                if (cartProvider.itemCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
                       ),
-                      textAlign: TextAlign.center,
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Center(
+                        child: Text(
+                          '${cartProvider.itemCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
         const SizedBox(width: 8),
       ],
