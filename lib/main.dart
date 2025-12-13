@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: MaterialApp(
-        title: '선물의 정석',
+        title: 'chrismassy',
         debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
