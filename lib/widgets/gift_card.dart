@@ -190,6 +190,7 @@ class _GiftCardState extends State<GiftCard> {
                           ),
                         ),
                       ],
+                      
                     ),
                   ],
                 ),
