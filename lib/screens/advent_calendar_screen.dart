@@ -151,7 +151,8 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFB71C1C), Color(0xFF6D001A)],
+                // Dark: #b3352f, Darker: #541916
+                colors: [Color(0xFFb3352f), Color(0xFF541916)],
               ),
             ),
           ),
@@ -161,49 +162,53 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else
-            Padding(
-              padding: const EdgeInsets.only(top: 100, left: 8, right: 8),
-              child: TableCalendar(
-                locale: 'ko_KR',
-                focusedDay: _decemberFirst,
-                firstDay: _decemberFirst,
-                lastDay: _decemberLast,
-                headerStyle: const HeaderStyle(
-                  leftChevronVisible: false,
-                  rightChevronVisible: false,
-                  formatButtonVisible: false,
-                  titleCentered: true,
-                  titleTextStyle: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+            SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TableCalendar(
+                    locale: 'ko_KR',
+                    focusedDay: _decemberFirst,
+                    firstDay: _decemberFirst,
+                    lastDay: _decemberLast,
+                    headerStyle: const HeaderStyle(
+                      leftChevronVisible: false,
+                      rightChevronVisible: false,
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      titleTextStyle: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                    daysOfWeekStyle: const DaysOfWeekStyle(
+                      weekdayStyle: TextStyle(color: Colors.white70),
+                      weekendStyle: TextStyle(color: Colors.white),
+                    ),
+                    calendarBuilders: CalendarBuilders(
+                      defaultBuilder: (context, day, focusedDay) {
+                        if (day.month != 12 || day.day > 24) return null;
+                        final mission =
+                            _missions.firstWhere((m) => m.day == day.day);
+                        final isLocked = day.isAfter(_today);
+                        return _buildCalendarCell(
+                            day.day, mission.isCompleted, isLocked);
+                      },
+                      todayBuilder: (context, day, focusedDay) {
+                        final mission =
+                            _missions.firstWhere((m) => m.day == day.day);
+                        return _buildCalendarCell(
+                            day.day, mission.isCompleted, false,
+                            isToday: true);
+                      },
+                      outsideBuilder: (_, __, ___) =>
+                          const SizedBox.shrink(),
+                      disabledBuilder: (_, __, ___) =>
+                          const SizedBox.shrink(),
+                    ),
+                    onDaySelected: _onDaySelected,
+                  ),
                 ),
-                daysOfWeekStyle: const DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(color: Colors.white70),
-                  weekendStyle: TextStyle(color: Colors.white),
-                ),
-                calendarBuilders: CalendarBuilders(
-                  defaultBuilder: (context, day, focusedDay) {
-                    if (day.month != 12 || day.day > 24) return null;
-                    final mission =
-                        _missions.firstWhere((m) => m.day == day.day);
-                    final isLocked = day.isAfter(_today);
-                    return _buildCalendarCell(
-                        day.day, mission.isCompleted, isLocked);
-                  },
-                  todayBuilder: (context, day, focusedDay) {
-                    final mission =
-                        _missions.firstWhere((m) => m.day == day.day);
-                    return _buildCalendarCell(
-                        day.day, mission.isCompleted, false,
-                        isToday: true);
-                  },
-                  outsideBuilder: (_, __, ___) =>
-                      const SizedBox.shrink(),
-                  disabledBuilder: (_, __, ___) =>
-                      const SizedBox.shrink(),
-                ),
-                onDaySelected: _onDaySelected,
               ),
             ),
 
@@ -285,7 +290,7 @@ class _AdventCalendarScreenState extends State<AdventCalendarScreen> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.all(5),
+      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),

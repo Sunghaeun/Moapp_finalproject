@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import '../services/user_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -11,6 +12,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _auth = AuthService();
+  final _userService = UserService();
   bool _loading = false;
 
   Future<void> _google() async {
@@ -20,6 +22,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final cred = await _auth.signInWithGoogle();
 
       if (cred != null && mounted) {
+        // Firestore에 사용자 정보 저장
+        await _userService.saveUser(cred.user!);
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -39,6 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final cred = await _auth.signInAnonymously();
 
       if (cred != null && mounted) {
+        // Firestore에 익명 사용자 정보 저장
+        await _userService.saveUser(cred.user!);
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
